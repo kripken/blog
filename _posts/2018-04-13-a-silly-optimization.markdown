@@ -37,5 +37,5 @@ How much does this affect binary size? Here are the diffs on the size of [`tanks
 | Just where it matters |       -2552  |      -544       |
 |                       |              |                 |
 
-Doing this on all integers increases compressed size by a lot more than it decreases uncompressed size! But doing it only on the integers where it matters lets us decrease both. Note that that file is around 10MB uncompressed, 3MB compressed, so overall the effect here is quite small. Still, many small optimizations can add up...
+Doing this on all integers increases compressed size by a lot more than it decreases uncompressed size! But doing it only on the integers where it matters lets us decrease both.
 
