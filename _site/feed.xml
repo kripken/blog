@@ -6,8 +6,8 @@
 </description>
     <link>http://kripken.github.com/blog/</link>
     <atom:link href="http://kripken.github.com/blog/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 13 Apr 2018 11:51:52 -0700</pubDate>
-    <lastBuildDate>Fri, 13 Apr 2018 11:51:52 -0700</lastBuildDate>
+    <pubDate>Fri, 13 Apr 2018 15:43:47 -0700</pubDate>
+    <lastBuildDate>Fri, 13 Apr 2018 15:43:47 -0700</lastBuildDate>
     <generator>Jekyll v3.0.1</generator>
     
       <item>
@@ -29,11 +29,11 @@
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-js&quot; data-lang=&quot;js&quot;&gt;&lt;span class=&quot;nx&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;c&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;  &lt;span class=&quot;nx&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;nx&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;c&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;  &lt;span class=&quot;nx&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;for any positive integer &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt;? But this has a downside: on typical code, addition is much more common than subtraction, and positive integers are much more common than negative ones. So if we did this, we’d be shrinking &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt; by replacing it with &lt;code class=&quot;highlighter-rouge&quot;&gt;-c&lt;/code&gt; but we’d be making the code less compressible by replacing a lot of additions with subtractions (note that we aren’t replacing all the additions, since many are not on a constant). In fact, on real-world code the downside outweights the benefit here: we reduce uncompressed size by a little but increase compressed size.&lt;/p&gt;
+&lt;p&gt;for any positive integer &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt;? But this has a downside: on typical code, addition is much more common than subtraction, and positive integers are much more common than negative ones. So if we did this, we’d be shrinking &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt; by replacing it with &lt;code class=&quot;highlighter-rouge&quot;&gt;-c&lt;/code&gt; but we’d be making the code less compressible by replacing a lot of additions with subtractions (note that we aren’t replacing all the additions, since many are not on a constant). In fact, on real-world code the downside outweights the benefit here: we reduce uncompressed size but increase compressed size.&lt;/p&gt;
 
 &lt;p&gt;To avoid that problem, Binaryen only does this &lt;a href=&quot;https://github.com/WebAssembly/binaryen/blob/master/src/passes/OptimizeInstructions.cpp#L1143&quot;&gt;on constants where it actually matters&lt;/a&gt;. Most of those have an addition before them that we replace by a subtraction, so there is still a downside to compression, but it is outweighted by us saving a byte, which helps enough that we reduce both the uncompressed and compressed size.&lt;/p&gt;
 
-&lt;p&gt;How much does this affect binary size? Here are the diffs on the size of &lt;code class=&quot;highlighter-rouge&quot;&gt;tanks.wasm&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;How much does this affect binary size? Here are the diffs on the size of &lt;a href=&quot;http://webassembly.org/demo/&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;tanks.wasm&lt;/code&gt;&lt;/a&gt;:&lt;/p&gt;
 
 &lt;table&gt;
   &lt;thead&gt;
@@ -62,7 +62,7 @@
   &lt;/tbody&gt;
 &lt;/table&gt;
 
-&lt;p&gt;That file is around 10MB uncompressed, 3MB compressed, so overall the effect here is quite small. Still, many small optimizations can add up…&lt;/p&gt;
+&lt;p&gt;Doing this on all integers increases compressed size by a lot more than it decreases uncompressed size! But doing it only on the integers where it matters lets us decrease both. Note that that file is around 10MB uncompressed, 3MB compressed, so overall the effect here is quite small. Still, many small optimizations can add up…&lt;/p&gt;
 
 </description>
         <pubDate>Fri, 13 Apr 2018 10:52:56 -0700</pubDate>

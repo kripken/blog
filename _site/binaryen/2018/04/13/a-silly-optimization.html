@@ -79,11 +79,11 @@
 <figure class="highlight"><pre><code class="language-js" data-lang="js"><span class="nx">x</span> <span class="o">+</span> <span class="nx">c</span>  <span class="o">=&gt;</span>  <span class="nx">x</span> <span class="o">-</span> <span class="p">(</span><span class="o">-</span><span class="nx">c</span><span class="p">)</span>
 <span class="nx">x</span> <span class="o">-</span> <span class="nx">c</span>  <span class="o">=&gt;</span>  <span class="nx">x</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="nx">c</span><span class="p">)</span></code></pre></figure>
 
-<p>for any positive integer <code class="highlighter-rouge">c</code>? But this has a downside: on typical code, addition is much more common than subtraction, and positive integers are much more common than negative ones. So if we did this, we’d be shrinking <code class="highlighter-rouge">c</code> by replacing it with <code class="highlighter-rouge">-c</code> but we’d be making the code less compressible by replacing a lot of additions with subtractions (note that we aren’t replacing all the additions, since many are not on a constant). In fact, on real-world code the downside outweights the benefit here: we reduce uncompressed size by a little but increase compressed size.</p>
+<p>for any positive integer <code class="highlighter-rouge">c</code>? But this has a downside: on typical code, addition is much more common than subtraction, and positive integers are much more common than negative ones. So if we did this, we’d be shrinking <code class="highlighter-rouge">c</code> by replacing it with <code class="highlighter-rouge">-c</code> but we’d be making the code less compressible by replacing a lot of additions with subtractions (note that we aren’t replacing all the additions, since many are not on a constant). In fact, on real-world code the downside outweights the benefit here: we reduce uncompressed size but increase compressed size.</p>
 
 <p>To avoid that problem, Binaryen only does this <a href="https://github.com/WebAssembly/binaryen/blob/master/src/passes/OptimizeInstructions.cpp#L1143">on constants where it actually matters</a>. Most of those have an addition before them that we replace by a subtraction, so there is still a downside to compression, but it is outweighted by us saving a byte, which helps enough that we reduce both the uncompressed and compressed size.</p>
 
-<p>How much does this affect binary size? Here are the diffs on the size of <code class="highlighter-rouge">tanks.wasm</code></p>
+<p>How much does this affect binary size? Here are the diffs on the size of <a href="http://webassembly.org/demo/"><code class="highlighter-rouge">tanks.wasm</code></a>:</p>
 
 <table>
   <thead>
@@ -112,7 +112,7 @@
   </tbody>
 </table>
 
-<p>That file is around 10MB uncompressed, 3MB compressed, so overall the effect here is quite small. Still, many small optimizations can add up…</p>
+<p>Doing this on all integers increases compressed size by a lot more than it decreases uncompressed size! But doing it only on the integers where it matters lets us decrease both. Note that that file is around 10MB uncompressed, 3MB compressed, so overall the effect here is quite small. Still, many small optimizations can add up…</p>
 
 
   </div>

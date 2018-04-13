@@ -25,11 +25,11 @@ To keep things simple, maybe we can ignore the specific values where this matter
 x + c  =>  x - (-c)
 x - c  =>  x + (-c)
 {% endhighlight %}
-for any positive integer `c`? But this has a downside: on typical code, addition is much more common than subtraction, and positive integers are much more common than negative ones. So if we did this, we'd be shrinking `c` by replacing it with `-c` but we'd be making the code less compressible by replacing a lot of additions with subtractions (note that we aren't replacing all the additions, since many are not on a constant). In fact, on real-world code the downside outweights the benefit here: we reduce uncompressed size by a little but increase compressed size.
+for any positive integer `c`? But this has a downside: on typical code, addition is much more common than subtraction, and positive integers are much more common than negative ones. So if we did this, we'd be shrinking `c` by replacing it with `-c` but we'd be making the code less compressible by replacing a lot of additions with subtractions (note that we aren't replacing all the additions, since many are not on a constant). In fact, on real-world code the downside outweights the benefit here: we reduce uncompressed size but increase compressed size.
 
 To avoid that problem, Binaryen only does this [on constants where it actually matters](https://github.com/WebAssembly/binaryen/blob/master/src/passes/OptimizeInstructions.cpp#L1143). Most of those have an addition before them that we replace by a subtraction, so there is still a downside to compression, but it is outweighted by us saving a byte, which helps enough that we reduce both the uncompressed and compressed size.
 
-How much does this affect binary size? Here are the diffs on the size of `tanks.wasm`
+How much does this affect binary size? Here are the diffs on the size of [`tanks.wasm`](http://webassembly.org/demo/):
 
 |                       | uncompressed | compressed      |
 |-----------------------|:------------:|:---------------:|
@@ -37,5 +37,5 @@ How much does this affect binary size? Here are the diffs on the size of `tanks.
 | Just where it matters |       -2552  |      -544       |
 |                       |              |                 |
 
-That file is around 10MB uncompressed, 3MB compressed, so overall the effect here is quite small. Still, many small optimizations can add up...
+Doing this on all integers increases compressed size by a lot more than it decreases uncompressed size! But doing it only on the integers where it matters lets us decrease both. Note that that file is around 10MB uncompressed, 3MB compressed, so overall the effect here is quite small. Still, many small optimizations can add up...
 
