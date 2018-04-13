@@ -13,9 +13,8 @@ baseurl: "/blog" # the subpath of your site, e.g. /blog
 url: "http://kripken.github.com" # the base hostname & protocol for your site
 twitter_username: kripken
 github_username:  kripken
+theme: jekyll-theme-slate
 
 # Build settings
 markdown: kramdown
-
-theme: jekyll-theme-slate
 
