@@ -8,7 +8,7 @@
 # Site settings
 title: Alon Zakai
 description: > # this means to ignore newlines until "baseurl:"
-  Compiling to the Web, Emscripten, WebAssembly, etc.
+  Compiling to the Web, Emscripten, Binaryen, WebAssembly, etc.
 baseurl: "/blog" # the subpath of your site, e.g. /blog
 url: "http://kripken.github.com" # the base hostname & protocol for your site
 twitter_username: kripken
