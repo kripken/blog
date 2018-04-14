@@ -31,10 +31,10 @@ To avoid that problem, Binaryen only does this [on constants where it actually m
 
 How much does this affect binary size? Here are the diffs, in bytes, on the size of [`tanks.wasm`](http://webassembly.org/demo/):
 
-|                       | uncompressed | compressed      |
-|-----------------------|:------------:|:---------------:|
-| All integers          |       -2552  |    +11347       |
-| Just where it matters |       -2552  |      -544       |
+| Which integers to optimize | uncompressed diff | compressed diff      |
+|----------------------------|:------------:|:---------------:|
+| All of them                |       -2552  |    +11347       |
+| Just ones where it matters |       -2552  |      -544       |
 
 Doing this on all integers increases compressed size by a lot more than it decreases uncompressed size! But doing it only on the integers where it matters lets us decrease both.
 
