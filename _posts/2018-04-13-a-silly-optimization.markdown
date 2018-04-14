@@ -29,13 +29,12 @@ for any positive integer `c`? But this has a downside: on typical code, addition
 
 To avoid that problem, Binaryen only does this [on constants where it actually matters](https://github.com/WebAssembly/binaryen/blob/master/src/passes/OptimizeInstructions.cpp#L1143). Most of those have an addition before them that we replace by a subtraction, so there is still a downside to compression, but it is outweighted by us saving a byte, which helps enough that we reduce both the uncompressed and compressed size.
 
-How much does this affect binary size? Here are the diffs on the size of [`tanks.wasm`](http://webassembly.org/demo/):
+How much does this affect binary size? Here are the diffs, in bytes, on the size of [`tanks.wasm`](http://webassembly.org/demo/):
 
 |                       | uncompressed | compressed      |
 |-----------------------|:------------:|:---------------:|
 | All integers          |       -2552  |    +11347       |
 | Just where it matters |       -2552  |      -544       |
-|                       |              |                 |
 
 Doing this on all integers increases compressed size by a lot more than it decreases uncompressed size! But doing it only on the integers where it matters lets us decrease both.
 

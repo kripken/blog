@@ -204,3 +204,24 @@ pre {
         }
     }
 }
+
+// Show nice tables
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    border: 2px solid black;
+    margin: 1em;
+}
+
+th {
+    border:2px solid black;
+    padding: 0.3em;
+    background-color: #bbb;
+}
+
+td {
+    border:1px solid black;
+    padding: 0.3em;
+}
+
