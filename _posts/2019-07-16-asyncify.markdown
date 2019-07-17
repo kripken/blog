@@ -1,0 +1,451 @@
+---
+layout: post
+title:  "Pause and Resume WebAssembly with Binaryen's Asyncify"
+date:   2019-07-16 10:52:56 -0700
+categories: wasm
+---
+
+Pausing and resuming code can be useful for various things, like implementing [coroutines](https://en.wikipedia.org/wiki/Coroutine), [async/await](https://en.wikipedia.org/wiki/Async/await), limiting how much CPU time untrusted code gets, and so forth. If you are customizing a WebAssembly VM then you have various ways to instrument the compiled code to do this. On the other hand, if you want to do this in "userspace", that is, if you are running inside of a standard WebAssembly VM and you want to transform some WebAssembly so that it can be paused and resumed, then Binaryen's [Asyncify](https://github.com/WebAssembly/binaryen/blob/master/src/passes/Asyncify.cpp) provides a solution. For example, you can use it to pause and resume WebAssembly that you run on the Web. If you have some synchronous code that you need to be asynchronous, but it's hard to rewrite, then Asyncify can do that for you automatically!
+
+Asyncify is implemented as a [Binaryen](https://github.com/WebAssembly/binaryen) pass. It provides **low-level** support for pausing and resuming WebAssembly by instrumenting the code and providing special functions that control **unwinding** and **rewinding** the call stack, preserving all the local state while doing so. We'll see examples below of how to do that - basically, you can start with normal synchronous WebAssembly code, run Asyncify on it, and then easily control unwinding and rewinding the call stack from either WebAssembly or JavaScript.
+
+Hopefully WebAssembly will support coroutines natively [in the future](https://github.com/WebAssembly/design/blob/master/FutureFeatures.md#coroutines). Another possibility here is to use [threads](https://github.com/WebAssembly/threads) (by blocking on another thread), but that can only work in browsers that support threads, and only in a worker. Asyncify is another option in the meantime, which works everywhere but adds some amount of overhead. We'll look into performance in depth later on - in many cases that overhead is surprisingly low!
+
+Let's start with three examples of how to use Asyncify: in pure WebAssembly, in JS plus WebAssembly, and in C using Emscripten.
+
+# Example: Pure WebAssembly
+
+To use Asyncify in pure WebAssembly, define imports to the `asyncify.*` API. Asyncify will turn those into direct calls to the implementations as it adds them. That API lets you control unwinding and rewinding the call stack:
+
+ * `asyncify.start_unwind`: Starts to unwind the call stack. Receives a pointer to a data structure that will store the information about the call stack and local state, see below.
+ * `asyncify.stop_unwind`: Stops unwinding the call stack. Must be called after you reach the end of the stack you want to unwind.
+ * `asyncify.start_rewind`: Starts to rewind the call stack. Receives a pointer to the data structure used earlier to unwind, and prepares to rewind to that exact position.
+ * `asyncify.stop_rewind`: Stops rewinding the call stack. Must be called after you reach the top of the stack you rewound, that is, when you finish returning to the previous position.
+
+Here's a simple example:
+
+{% highlight cl %}
+;; input.wat
+(module
+  (memory 1 1)
+  (import "spectest" "print" (func $print (param i32)))
+  (import "asyncify" "start_unwind" (func $asyncify_start_unwind (param i32)))
+  (import "asyncify" "stop_unwind" (func $asyncify_stop_unwind))
+  (import "asyncify" "start_rewind" (func $asyncify_start_rewind (param i32)))
+  (import "asyncify" "stop_rewind" (func $asyncify_stop_rewind))
+  (global $sleeping (mut i32) (i32.const 0))
+  (start $runtime)
+  (func $main
+    (call $print (i32.const 1))
+    (call $sleep)
+    (call $print (i32.const 3))
+  )
+  (func $sleep
+    (if
+      (i32.eqz (global.get $sleeping))
+      (block
+        ;; Start to sleep.
+        (global.set $sleeping (i32.const 1))
+        (i32.store (i32.const 16) (i32.const 24))
+        (i32.store (i32.const 20) (i32.const 1024))
+        (call $asyncify_start_unwind (i32.const 16))
+      )
+      (block
+        ;; Resume after sleep.
+        (call $asyncify_stop_rewind)
+        (global.set $sleeping (i32.const 0))
+      )
+    )
+  )
+  (func $runtime
+    ;; Call main the first time, let the stack unwind.
+    (call $main)
+    (call $asyncify_stop_unwind)
+    ;; We could do anything we want around here while
+    ;; the code is paused!
+    (call $print (i32.const 2))
+    ;; Set the rewind in motion.
+    (call $asyncify_start_rewind (i32.const 16))
+    (call $main)
+  )
+){% endhighlight %}
+
+This little example uses the `spectest` import for logging, which works in the official WebAssembly test suite, and so it should work in any interpreter compatible with that, like the spec interpreter or Binaryen's `wasm-shell`. Here is how you can build and run it:
+{% highlight shell %}
+$ wasm-opt input.wat -O --asyncify --print > output.wat
+$ wasm-shell output.wat
+BUILDING MODULE [line: 1]
+(i32.const 1)
+(i32.const 2)
+(i32.const 3)
+{% endhighlight %}
+First we process the file with `wasm-opt`, running the Asyncify pass and also optimizing (optimizing is very important here for size and speed; see details later). We then print out the result in text form, since that's what `wasm-shell` expects and also it lets you inspect the instrumented code if you're curious (otherwise we could do `-o output.wasm` to get a binary). Then if we run it in the shell we get some logging from that tool (`BUILDING ..`), and then the expected three logged numbers: `main` prints `1`, then while it is sleeping we print `2`, and then after we resume `main` continues and prints `3`.
+
+Note how even though we call `main` twice (once to start it, once to continue after sleeping), it only executes once (split into two parts), and therefore we only see `1` and `3` printed once. For comparison, if we ran the original uninstrumented `input.wat` (after removing the `asyncify_*` calls from it), then we'd get this:
+{% highlight shell %}
+(i32.const 1)
+(i32.const 3)
+(i32.const 2)
+(i32.const 1)
+(i32.const 3)
+{% endhighlight %}
+When not instrumented `main` can't be paused once it starts to run, and it prints `1` and `3` every such time, giving us no opportunity to print `2` in the middle.
+
+It may be confusing that we need to call `main` twice. The first time is obvious; the second is to start the rewinding of the call stack - we need the VM to end up in the exact spot it was before, and the VM manages the call stack, so we have to recreate the call stack by executing the same calls. So we start at the same place, and then the instrumented code makes sure to follow the right code paths in each function to rewind properly.
+
+That also determines how `sleep` works, which is the function `main` calls to pause itself. `sleep` will be called twice, exactly like `main`: once when we run the program and we decide to sleep, and once when we finish rewinding the call stack up to where it was before - which is inside `sleep`! To handle such multiple calls a useful code pattern is used here, to check whether we are sleeping or not. If we aren't, that is the first call and we start to unwind; if we are then that is the second call and we finish the rewind, allowing normal execution to proceed.
+
+An important detail here is the data structure that we pass a pointer to in `asyncify_start_unwind` and `asyncify_start_rewind`. This plays a similar role to the [`jmp_buf`](https://en.wikipedia.org/wiki/Setjmp.h#Member_types) used with setjmp/longjmp, but it's pretty simple even if you're not familiar with that: it's basically a place to store information while we unwind and read it back while we rewind so that we can return to the exact same location and state. The `i32` passed to those methods must refer to a region in linear memory containing such a structure, which contains two fields that must be initialized before calling `asyncify_start_unwind`:
+
+ * `i32` at offset `0`: the index in linear memory of the start of the "asyncify stack", a region of memory allocated for us.
+ * `i32` at offset `4`: the index of the end of that stack region, which implies how big it is. If the stack is too small, the `asyncify_*` functions will execute an `unreachable` instruction (they check for a stack overflow). If you see such a trap happen from `asyncify_*` then you need to increase the size.
+
+(This and other details are documented in the [pass source](https://github.com/WebAssembly/binaryen/blob/master/src/passes/Asyncify.cpp).) In the example above the data structure starts at `16`, and the stack starts right after those two fields, at `24` (the end of the stack is at `1024`, but in this tiny example we'll need only a small fraction of it). In this example we have just one such structure, since that's all we need to pause and resume a single execution; to implement something like coroutines you would use one data structure for each.
+
+One thing you may notice if you read the instrumented code is that `runtime` and `sleep` are not instrumented by Asyncify, as it assumes any function calling its API is "runtime" code - the code that controls when to unwind and rewind, and in particular, unwinding must stop when it reaches there! This is necessary for using Asyncify in pure WebAssembly, as otherwise all the code would be instrumented and unwinding would return to the place that called into the module. In the next section we'll see how to unwind and rewind from JavaScript, in which case the "runtime" is outside the module.
+
+# Example: JavaScript
+
+Controlling unwinding and rewinding from JavaScript is very easy: Asyncify exports the four API methods, and you can use them in a similar way as in the last section. Just for fun in this example we'll show how to do everything in JS, including running Binaryen to call Asyncify, which we can do thanks to [binaryen.js](https://www.npmjs.com/package/binaryen) (you can get it with `npm install binaryen`).
+
+Here is the example source:
+
+{% highlight javascript %}
+// example.js
+const binaryen = require("binaryen");
+ 
+// Create a module from text.
+const ir = new binaryen.parseText(`
+  (module
+    (memory 1 1)
+    (import "env" "before" (func $before))
+    (import "env" "sleep" (func $sleep (param i32)))
+    (import "env" "after" (func $after))
+    (export "memory" (memory 0))
+    (export "main" (func $main))
+    (func $main
+      (call $before)
+      (call $sleep (i32.const 2000))
+      (call $after)
+    )
+  )
+`);
+
+// Run the Asyncify pass, with (minor) optimizations.
+binaryen.setOptimizeLevel(1);
+ir.runPasses(['asyncify']);
+
+// Get a WebAssembly binary and compile it to an instance.
+const binary = ir.emitBinary();
+const compiled = new WebAssembly.Module(binary);
+const instance = new WebAssembly.Instance(compiled, {
+  env: {
+    before: function() {
+      console.log('before!');
+      setTimeout(function() {
+        console.log('(an event that happens during the sleep)');
+      }, 1000);
+    },
+    sleep: function(ms) {
+      if (!sleeping) {
+        // We are called in order to start a sleep/unwind.
+        console.log('sleep...');
+        // Fill in the data structure. The first value has the stack location,
+        // which for simplicity we can start right after the data structure itself.
+        view[DATA_ADDR >> 2] = DATA_ADDR + 8;
+        // The end of the stack will not be reached here anyhow.
+        view[DATA_ADDR + 4 >> 2] = 1024;
+        wasmExports.asyncify_start_unwind(DATA_ADDR);
+        sleeping = true;
+        // Resume after the proper delay.
+        setTimeout(function() {
+          console.log('timeout ended, starting to rewind the stack');
+          wasmExports.asyncify_start_rewind(DATA_ADDR);
+          // The code is now ready to rewind; to start the process, enter the
+          // first function that should be on the call stack.
+          wasmExports.main();
+        }, ms);
+      } else {
+        // We are called as part of a resume/rewind. Stop sleeping.
+        console.log('...resume');
+        wasmExports.asyncify_stop_rewind();
+        sleeping = false;
+      }
+    },
+    after: function() {
+      console.log('after!');
+    }
+  }
+});
+const wasmExports = instance.exports;
+const view = new Int32Array(wasmExports.memory.buffer);
+
+// Global state for running the program.
+const DATA_ADDR = 16; // Where the unwind/rewind data structure will live.
+let sleeping = false;
+
+// Run the program. When it pauses control flow gets to here, as the
+// stack has unwound.
+wasmExports.main();
+console.log('stack unwound');
+wasmExports.asyncify_stop_rewind();{% endhighlight javascript %}
+
+Running it with `nodejs example.js`, the output is:
+
+{% highlight none %}
+before!
+sleep...
+stack unwound
+(an event that happens during the sleep)
+timeout ended, starting to rewind the stack
+...resume
+after!
+{% endhighlight none %}
+
+The key thing here is that we start a sleep, unwind the stack, and can then handle an event - that event would not arrive if we were not running asynchronously! After that, we rewind the stack, and proceed normally.
+
+Most of the details here are direct parallels to the pure WebAssembly example from earlier: `sleep` is called more than once, we use a similar data structure, and so forth.
+
+# Example: Emscripten
+
+The first two examples showed how to use Asyncify at a low level, basically implementing your own runtime. Let's see a higher-level example now where the runtime is already provided: writing C code using Emscripten.
+
+Emscripten needs something like Asyncify because the native APIs that Emscripten supports (POSIX file reading, etc.) are often synchronous, while Web APIs are generally asynchronous. For that reason Emscripten has had options like [Emterpreter-Async](https://emscripten.org/docs/porting/emterpreter.html#emterpreter-async-run-synchronous-code) which help codebases be ported to the Web that otherwise would need a massive refactoring. Asyncify is a new option that Emscripten can use together with [the new LLVM WebAssembly backend](https://v8.dev/blog/emscripten-llvm-wasm) (which will be the default backend soon, but isn't yet). When using that backend you can simply add `-s ASYNCIFY` to your `emcc` command, and that will run Asyncify and enable synchronous versions of [various APIs](https://emscripten.org/docs/api_reference/emscripten.h.html#emterpreter-async-functions) like `emscripten_sleep, emscripten_wget`, etc. For example, you can write code like this (note: we use [EM_JS](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#interacting-with-code-call-javascript-from-native) to make it convenient to mix JS and C):
+{% highlight cpp %}
+// example.cpp
+#include <emscripten.h>
+#include <stdio.h>
+
+// start_timer(): call JS to set an async timer for 500ms
+EM_JS(void, start_timer, (), {
+  Module.timer = false;
+  setTimeout(function() {
+    Module.timer = true;
+  }, 500);
+});
+
+// check_timer(): check if that timer occurred
+EM_JS(bool, check_timer, (), {
+  return Module.timer;
+});
+
+int main() {
+  start_timer();
+  // "Infinite loop", synchronously poll for the timer.
+  while (1) {
+    if (check_timer()) {
+      printf("timer happened!\n");
+      return 0;
+    }
+    printf("sleeping...\n");
+    emscripten_sleep(100);
+  }
+}
+{% endhighlight cpp %}
+
+This contains an "infinite loop" that you normally can't do on the Web - no event (including the `setTimeout`) will happen until you return to the main event loop. But if you compile that with
+{% highlight shell %}
+$ emcc -O3 example.cpp -s ASYNCIFY
+{% endhighlight %}
+and run `nodejs a.out.js`, then you'll see something like
+{% highlight none %}
+sleeping...
+sleeping...
+sleeping...
+sleeping...
+sleeping...
+timer happened!
+{% endhighlight none %}
+
+With Asyncify those sleeps are actual returns to the main event loop!
+
+Implementing something like `emscripten_sleep` is very simple using Emscripten's JS runtime support: it's basically [just this](https://github.com/emscripten-core/emscripten/blob/4e8ad61beea8d93ed0e8f007c99a9bdf99db691d/src/library_async.js#L688):
+{% highlight javascript %}
+function emscripten_sleep(ms) {
+  Asyncify.handleSleep(function(wakeUp) {
+    setTimeout(wakeUp, ms);
+  });
+}
+{% endhighlight %}
+`handleSleep` handles the "double call" issue from before automatically: you just provide it with the code to run (here, a `setTimeout`), and you call `wakeUp` at the right time in the future, and everything just works!
+
+As mentioned earlier you need to use the LLVM WebAssembly backend with the new Asyncify feature, but note that in the older "fastcomp" backend there is an old async transform feature called Asyncify as well (but using a different algorithm and implementation, see later), which you'll get if you use fastcomp and set `ASYNCIFY`. To make sure you are using the new version, make sure you are using the new LLVM WebAssembly backend - for example, run `emcc -v` and look at the clang version; fastcomp is stuck at `6.0.1` while the new backend is at `9.0.0+`. (Note that the name "Bysyncify" was used temporarily for the new implementation, but we decided in the end that "Asyncify" captures exactly what it does and so is the clearest name for it.)
+
+## Other languages
+
+You don't need to look at [Emscripten's implementation of handleSleep](https://github.com/emscripten-core/emscripten/blob/4e8ad61beea8d93ed0e8f007c99a9bdf99db691d/src/library_async.js#L624) in order to use the API in C, but it may be interesting if you're thinking of implementing support for Asyncify in another language. It may also be helpful to look at [Julia's usage of Asyncify](https://github.com/julialang/julia/pull/32532). And let me know if I can help with anything!
+
+# How Asyncify works
+
+(You don't need to understand how Asyncify works in order to use it. If you're not interested in that you can skip this section.)
+
+The basic capabilities we need in something like Asyncify are to unwind and rewind the call stack, to jump back to the right place in the middle of the function in each case, and to preserve locals while doing so. Saving and reloading locals is fairly straightforward (although doing it efficiently takes some work; Asyncify depends on the Binaryen optimizer to help there). What is trickier is to get back to the right place in the middle of control flow. There are many possible ways to do this; as mentioned earlier Emscripten has had an older Asyncify option and also the Emterpreter features for this, and the new Asyncify tries to improve on them, so it's interesting to briefly summarize the history here.
+
+## Old Asyncify
+
+[Old Asyncify](https://github.com/emscripten-core/emscripten-fastcomp/blob/b08061aef3e907ea4cc16951f8c0651268d1fd12/lib/Target/JSBackend/NaCl/LowerEmAsyncify.cpp) was implemented in the "fastcomp" fork of LLVM and it works on LLVM IR. It adds checks for the stack unwinding after each relevant call, and returns immediately if so. For rewinding the call stack it creates new functions that are similar to the original but contain the code from the point we want to resume at, and it does an indirect call to execute the right one. (This code duplication helps in a similar way as node splitting does with fixing irreducible control flow - by cloning code we can avoid needing a control flow branch into a nested loop, which would be irreducible and not representable in WebAssembly or asm.js.)
+
+A disadvantage here is the number of such extra functions may be large, depending on how many potentially async calls there are. An additional source of increased code size is local state: old Asyncify works on LLVM IR and so it operates on LLVM's SSA registers. There are usually many more such registers than there are locals in the final WebAssembly. In practice we saw huge code size increases sometimes which limited old Asyncify's usefulness.
+
+Note that old Asyncify has no relation to [LLVM coroutines](https://llvm.org/docs/Coroutines.html) (LLVM added them in 2016; Asyncify is from 2014). LLVM coroutines avoid the above problem with local state by not doing the full lowering at the IR level, which is good, but also means that each backend must add support, and the LLVM WebAssembly backend hasn't yet. It may be interesting to implement coroutines there; one option might be to use new Asyncify.
+
+## Emterpreter
+
+The Emterpreter is a little interpreted VM implemented in asm.js that runs a custom bytecode (which asm.js is compiled into). As a VM, it can easily pause and resume execution, since the locals are already on the stack, and there is an actual program counter! This also has a guarantee of not increasing code size, since the bytecode is smaller than asm.js or WebAssembly, and the VM itself is negligible in anything but a trivially small program.
+
+The obvious problem of course is that as an interpreter this is quite slow. The main solution to that is *selective interpreting*: by telling the Emterpreter which code to convert and which to leave alone, you can keep the important code at full speed. That works if whenever you unwind/rewind there is only emterpreted code on the stack (as we can't unwind/rewind anything else). In other words, if you have something like this (in JS-like pseudocode):
+{% highlight javascript %}
+function caller() {
+  let x = foo();
+  sleep(100);
+  return x;
+}
+{% endhighlight javascript %}
+
+Then if `foo` can't unwind the stack, you can run it at full speed. You only need to emterpret `caller`, which may be fine if doesn't take a significant amount of time itself anyhow.
+
+## New Asyncify
+
+As mentioned earlier new Asyncify (which we just call "Asyncify" in the rest of this post) tries to improve on those earlier approaches. The first design decision is that it operates on WebAssembly, and because of that it is implemented in Binaryen. That avoids the problem with many SSA registers that we mentioned earlier, and also Asyncify integrates with the Binaryen optimizer to reduce the number of locals as much as possible.
+
+The big question is then what to do about control flow. Asyncify does something like this to that last code snippet (again, in JS-like pseudocode):
+{% highlight javascript %}
+function caller() {
+  let x;
+  if (rewinding) { .. restore x .. }
+  if (normal) {
+    x = foo();
+  }
+  if (normal || .. check call index ..) {
+    sleep(100);
+    if (unwinding) {
+      .. save call index and x ..
+      return;
+    }
+  }
+  return x;
+}
+{% endhighlight %}
+
+This may look confusing at first, but it's really pretty simple. The identifiers "normal", "rewinding", "unwinding" mean that we check if we are running normally, rewinding the call stack, or unwinding it. If we are rewinding, we start by restoring the local state. We also guard most code with checks on whether we are running normally - if we are rewinding, we must skip that code, since we've already executed it. When we reach a call that might unwind the stack, we have a "call index" for it so that we know which call to return to inside each function. If the call starts an unwinding, we save the call index and local state and exit immediately. Or if we are rewinding, then the call will set the state to normal, and then we will simply continue to execute on from the right place.
+
+The key principle here is that we don't do any complex CFG transformations. Instead, Asyncify's approach is to **skip code while rewinding**, always moving forward so that we eventually get to the right place (this algorithm is called "Bysyncify" internally in Binaryen). Importantly, we can put those ifs around whole clumps of code that can't unwind, like a loop without a call:
+{% highlight javascript %}
+if (normal) {
+  for (let i = 0; i < 1000; i++) {
+    total += i;
+  }
+}
+{% endhighlight %}
+
+The entire loop is inside the if, which means that it runs at full speed! This is a big part of why Asyncify is faster than you'd expect.
+
+Another reason Asyncify is fast is that we analyze the entire program's call graph to see which functions might unwind, so that we can avoid modifying functions that can't. That's why we didn't check for unwinding after calling `foo` in the example from before.
+
+Also, the ifs to skip code if rewinding and to return if unwinding are not that bad, if unwinding/rewinding are fairly rare events, because they will be well-predicted branches that modern CPUs handle well. They also don't interfere with the existing structure of control flow, for example,  this loop:
+{% highlight javascript %}
+while (1) {
+  total += i;
+  i++;
+  maybeSleep();
+}
+{% endhighlight %}
+might end up like this:
+{% highlight javascript %}
+while (1) {
+  if (normal) {
+    total += i;
+    i++;
+  }
+  if (normal || .. check call index ..) {
+    maybeSleep();
+    if (unwinding) {
+      .. save call index and x ..
+      return;
+    }
+  }
+}
+{% endhighlight %}
+Note that the loop's general structure hasn't been altered, we just added some branches inside it (unlike old Asyncify which would create additional functions), and the cost of the branches may be minor in comparison to the cost of the call. Note also that when resuming we don't need to repeat iterations of the loop - we just need to get to the right syntactic call location and then since the locals are restored it's as if we are in the right iteration!
+
+In summary, the general idea is to keep skipping code while rewinding. This may be less efficient than a direct CFG branch straight to the right place, but it is simple as well as predictable both in the code we generate and its runtime performance; and by analyzing the entire program we only add that overhead where it is actually needed. Next we'll see performance numbers for this.
+
+# Measurements
+
+## General overhead
+
+Asyncify's checks about unwinding and rewinding the stack are expected to add overhead since they add work, and they can affect the liveness and interferences of locals etc. How expensive is this?
+
+We'll focus on code size here; see notes later down on speed. There are 4 interesting modes here, that we'll measure on the Emscripten benchmark suite:
+
+ * **normal** - The benchmark compiled normally.
+ * **asyncify (worst)** - The benchmark compiled with asyncify in the most naive, worst way. Here we assume that *any* call to an import may unwind/rewind the stack (we consider imports because Emscripten controls unwinding/rewinding in JS, and not from inside WebAssembly).
+ * **asyncify+list** - Same as the last, but also with a list of the only imports that can unwind/rewind the stack (using the option `asyncify-imports` to Asyncify; see the [pass source](https://github.com/WebAssembly/binaryen/blob/master/src/passes/Asyncify.cpp) for details).
+ * **asyncify+list-indirect** - Same as the last, but also assuming indirect calls can't lead to an unwind/rewind of the stack (using the option `asyncify-ignore-indirect`).
+
+<figure>
+  <img src="/blog/assets/bysize.svg" alt="code size results"/>
+  <figcaption>Code size measurements in bytes (lower is better).</figcaption>
+</figure>
+
+The first thing to note is that the size overhead is in the 1-2x range, that is, the binary is around 50% larger on average. Even on the realistic macrobenchmarks on the right (in ALL CAPS) it barely exceeds 2. In other words, there is significant overhead, but it's fairly predictable and not extreme. That this is what we see on the worst case, where we instrument far more code than we need to - every import and indirect call looks like it might unwind - is encouraging!
+
+Looking more in depth, if we compare "asyncify (worst)" to "asyncify+list", then there is a noticeable improvement. For example, on Box2D it's about 25% smaller. What's going on here is that if we tell Asyncify which imports can start an unwind/rewind and which can't, then its whole-program analysis can figure out that a lot of code doesn't need to be instrumented at all.
+
+However, this fails on larger programs for a specific reason: **indirect calls**. Once you have enough of them it becomes very hard to statically analyze control flow. Poppler is the largest benchmark here, and it hardly benefits from the list of imports for this reason.
+
+If we compare "asyncify+list" to "asyncify+list-indirect", where we ignore indirect calls, then almost all the overhead vanishes, on every single benchmark! Of course, "asyncify+list-indirect" is the best possible case: we tell Asyncify exactly what can unwind/rewind, and we also don't actually have any unwind/rewind operations here, since these are normal computational benchmarks - they don't actually call `sleep`! Despite not having such calls the worst case was still overestimating the overhead because Asyncify thinks any import or indirect call can unwind/rewind. And the point of the best case is that it shows that with the right information we can remove all that overhead.
+
+So far we talked about code size. The numbers for speed are mostly similar, or better - that is, if the binary is 20% bigger, it tends to be at worst 20% slower. However, I did notice one large outlier, SQLite, on which the slowdown is around 5x. That appears to be because of the huge interpreter-like function, which goes from 150K of binary (already big!) to 300K. The larger problem is probably with the locals: they go from 25 to 27, which doesn't seem so bad (Binaryen works hard to keep that number low!) but they hide the fact that all the extra branches and the saving/restoring code for the locals increases their live ranges dramatically - for many of them, across the whole function, which means a lot more interference, spilling and so forth; VMs may also limit compilation to the baseline tier on such pathological code. A 5x slowdown is not that surprising on such an extreme case.
+
+**In summary**: The general overhead of Asyncify can be limited to occur only where it is actually needed (if you can avoid indirect calls being in the way) and where it does occur it should do no worse than double size / halve speed for most code. However, extremely massive functions may end up with larger slowdowns.
+
+### More on indirect calls
+
+Using a list of imports is probably possible for most use cases. In Emscripten for example we pass it `emscripten_sleep` and the other sync APIs and syscalls. However, ignoring indirect calls is less obvious - some programs simply do have indirect calls on the call stack for an unwind/rewind operation, and as a result the overhead may approach the worst case from before. In such cases the true solution for maximal performance is probably a new WebAssembly spec proposal for coroutines, as mentioned earlier.
+
+On the other hand, it is also common to only need that support in the main event loop, something like this:
+
+{% highlight cpp %}
+int main() {
+  startUp();
+  while (1) {
+    renderFrame();
+    handleEvents();
+    sleep(timeToNextFrame());
+  }
+}
+{% endhighlight cpp %}
+
+This type of "infinite loop" is common in games and other things. If that is the only call to sleep, then it is perfectly safe to ignore indirect calls in Asyncify, and when passing that flag it should only end up instrumenting `main()` itself. In that case, the overhead should be almost zero! Overall, if you can ignore indirect calls when using Asyncify, it can be extremely helpful. To do so with `wasm-opt` pass `--pass-arg=asyncify-ignore-indirect`, or in Emscripten use `-s ASYNCIFY_IGNORE_INDIRECT`.
+
+## Unwind/rewind speed
+
+The measurements before looked at the general overhead: how much bigger code becomes and how much slower it is when running normally. Now let's take a look at how fast we can "context switch", that is, unwind and rewind the stack. Here are some numbers on the [fannkuch benchmark](https://github.com/emscripten-core/emscripten/blob/incoming/tests/fannkuch.cpp), modified to sleep in the [most inconvenient place](https://gist.github.com/kripken/f3ddced568b9d149b81669679a16da37) (the innermost loop).
+
+<figure>
+  <img src="/blog/assets/bycontext.svg" alt="context switching results"/>
+  <figcaption>Unwind/rewind measurements on fannkuch (duration in ms times number of sleeps). Total times are in seconds (lower is better).</figcaption>
+</figure>
+
+The first two bars show that just enabling Asyncify adds some overhead (22%), even without actually sleeping - that's the general overhead we measured before. The other bars show what happens when we do actually sleep: 1ms 1 time, 1ms 1000 times, or 0ms 1000 times. A single sleep's impact is so small it's basically impossible to measure, which is good! A thousand sleeps of 1ms should add 1 second (the total of the time spent sleeping); in practice it adds 1.18 seconds, with some noise (not pictured). That it's close to the theoretical minimum is good, and the noise suggests the overhead is related to the accuracy of the timer used in setTimeout. Indeed, doing the same amount of sleeps for 0ms (which should immediately resume in the next event loop without waiting at all) takes about the same time.
+
+**In summary**: The unwind/rewind overhead of Asyncify is basically negligible if you are using it to do anything asynchronous. (It would also be interesting to measure something non-asynchronous, like swapping between two coroutines, but I don't have a good benchmark for that and this post is quite long already!)
+
+## The importance of optimization
+
+In the examples earlier we told Binaryen to optimize while it ran Asyncify. Binaryen doesn't optimize by default, because that keeps things as modular as possible - each pass, like Asyncify, does the least possible by itself, and it's simpler to write such passes if we assume that the other passes will optimize for us.
+
+It is **very important** to optimize while running Asyncify, for both code size and speed, as the following numbers on the Fannkuch benchmark show:
+
+<figure>
+  <img src="/blog/assets/byopt.svg" alt="code size results"/>
+  <figcaption>Fannkuch code size measurements (bytes; lower is better).</figcaption>
+</figure>
+
+Running `wasm-opt --asyncify` *without* optimizations leads to huge code sizes, while `-O --asyncify` (which uses Binaryen's default optimization level) produces code sizes like what we'd expect given the data from before. Remember to optimize, both when running `wasm-opt` directly or when calling a compiler that uses it like `emcc`!
+
+# Final thoughts
+
+Hopefully Asyncify is useful for people that have synchronous WebAssembly code they want to run asynchronously, or to pause and resume, etc. If you do something cool with it, or you find a bug, let me know!
+
