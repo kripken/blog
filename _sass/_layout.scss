@@ -218,8 +218,23 @@
 .post-content {
     margin-bottom: $spacing-unit;
 
-    h2 {
+    h1 {
         font-size: 32px;
+
+        font-weight: bold;
+        margin-top: 1em;
+        border-top: 1px solid #acf;
+        border-bottom: 1px solid #48f;
+
+        @include media-query($on-laptop) {
+            font-size: 34px;
+        }
+    }
+
+    h2 {
+        font-size: 28px;
+
+        border-bottom: 1px solid #777;
 
         @include media-query($on-laptop) {
             font-size: 28px;
@@ -227,7 +242,7 @@
     }
 
     h3 {
-        font-size: 26px;
+        font-size: 24px;
 
         @include media-query($on-laptop) {
             font-size: 22px;
