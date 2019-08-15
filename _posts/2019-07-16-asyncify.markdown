@@ -188,7 +188,7 @@ let sleeping = false;
 // stack has unwound.
 wasmExports.main();
 console.log('stack unwound');
-wasmExports.asyncify_stop_rewind();{% endhighlight javascript %}
+wasmExports.asyncify_stop_unwind();{% endhighlight javascript %}
 
 Running it with `nodejs example.js`, the output is:
 
