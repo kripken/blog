@@ -16,5 +16,5 @@ github_username:  kripken
 
 # Build settings
 markdown: kramdown
-theme: jekyll-theme-slate # doesn't work, nothing happens :(
+#theme: jekyll-theme-slate # doesn't work, nothing happens :(
 
