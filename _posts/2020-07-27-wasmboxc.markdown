@@ -1,0 +1,603 @@
+---
+layout: post
+title:  WasmBoxC&colon; Simple, Easy, and Fast VM-less Sandboxing
+date:   2020-07-27 00:00:00 -0700
+categories: wasm
+---
+
+The software ecosystem has a lot of useful but unsafe code, and the easier it is to sandbox that code, the more
+often that'll happen. If it were as simple as passing the compiler a `--sandbox` flag
+that makes an unsafe library unable to see or affect anything
+outside of it, that would be incredible! We can't get it quite that easy,
+but this post describes **WasmBoxC**, a sandboxing approach that is
+very simple to use. All you need to do is:
+
+* **Compile the unsafe library using a [WebAssembly](https://webassembly.org/) (wasm) compiler instead of the normal system compiler**.
+That uses wasm internally, but you don't need to care about that &mdash;
+all you see is it emits a C file with sandboxed code.
+* **Write some C to interface with the compiled C of the unsafe library**. (This is
+necessary because the sandboxed code can't access outside memory, and also it
+uses the portable wasm ABI.)
+
+Compile and link that C code, and now that unsafe library is sandboxed from the rest of your application!
+In a later section we'll see concrete examples of how easy both those steps are.
+
+Here is the approach in more detail:
+
+<img src="/blog/assets/wasmboxc.png" alt="unsafe code => safe wasm => safe c => safe native"/>
+
+By **compiling to wasm** we sandbox the code, preventing it from accessing
+anything on the outside.
+That includes both *memory* - the sandboxed code can't read or write to anywhere outside it -
+and *capabilities* - the sandboxed code can't do anything but pure computation,
+unless you give it a function to call to do things like read from a file, tell
+the time, etc.
+We also get the rest of the wasm guarantees on
+[safety](https://webassembly.org/docs/security/) and
+[portability](https://webassembly.org/docs/portability/). Wasm
+sandboxing is even safe to run in the same process as other code (at least modulo
+[Spectre-type](https://en.wikipedia.org/wiki/Spectre_(security_vulnerability))
+vulnerabilities), much like
+[Software Fault Isolation (SFI)](http://www.cse.psu.edu/~gxt29/papers/sfi-final.pdf).
+
+After we've compiled an unsafe library to wasm, how can we run it as part of our
+application?
+We could integrate a wasm VM and run the wasm there. But instead,
+with WasmBoxC we take a **VM-less** approach and compile the wasm into native
+code, while preserving the wasm semantics, including the sandboxing.
+That native code can be linked normally into an application, which
+is much simpler than integrating a wasm VM.
+
+The specific approach WasmBoxC takes to compile wasm into native code is to
+**compile it to C** using
+[wabt](https://github.com/WebAssembly/wabt)'s
+[wasm2c](https://github.com/WebAssembly/wabt/tree/master/wasm2c) tool,
+and then run a standard C compiler on it. In fact,
+WasmBoxC's approach compiles into a **simple subset of C**.
+This is a big part of what makes this approach so simple, and
+brings several advantages:
+
+* It's easy to read and verify the generated C for security.
+* It lets us use a C compiler like clang or gcc to make the sandboxed
+  code very fast.
+* It's very easy to use the code in existing build systems.
+* It's easy to write code to interact with the sandbox.
+* A single build of C code can be compiled and run on practically any platform,
+  and code to interact with the sandbox also only needs to be written once.
+
+Despite the simplicity of using C, WasmBoxC sandboxing has low
+overhead: just **14%** with some non-portable C code (the
+"signal handler trick", see later), or **42%** in 100% portable C
+(with no OS- or CPU-specific operations at all). We'll also see that there are options
+in between those 14% and 42% numbers.
+
+The basic idea in WasmBoxC is simple and
+[not original](https://twitter.com/FlohOfWoe/status/1011523018428780544).
+What is
+new in this post is showing that the approach works, doing
+benchmarking on real-world code to show it is fast, presenting complete examples of how
+easy it is to sandbox real-world libraries, and writing up the approach in
+detail to describe the benefits (see in particular the section on memory-safe
+languages).
+This post also invents a name for the technique.
+
+## Speed
+
+To get an idea of WasmBoxC's speed, let's take a look at
+[20 benchmarks](https://github.com/emscripten-core/emscripten/blob/master/tests/test_benchmark.py),
+comparing clang 9.0.1, clang 11 (dev version as of May 23 2020), gcc 9.2.1, and
+WasmBoxC. All numbers are normalized to clang 9 (which is therefore equal to 1; lower numbers are better).
+
+<img src="/blog/assets/wasmboxc-perf.png" alt="performance results"/>
+
+| compiler            | relative speed |
+| -------------       | :---: |
+| clang 9.0.1         | 1.00  |
+| clang 11 (dev)      | 0.97  |
+| gcc 9.2.1           | 0.93  |
+| WasmBoxC (explicit) | 1.42  |
+| WasmBoxC (OS-based) | 1.14  |
+
+These benchmarks include a wide variety of code, and the ones prefixed with `zzz_` are real-world
+codebases or benchmarks:
+the 
+[Box2D](https://box2d.org/) and
+[Bullet](https://en.wikipedia.org/wiki/Bullet_(software))
+physics engines, the
+[CoreMark](https://en.wikipedia.org/wiki/Coremark) and
+[LINPACK](https://en.wikipedia.org/wiki/LINPACK_benchmarks)
+benchmarks, the
+[Lua](https://www.lua.org/) VM (one GC and one computational benchmark),
+the
+[LZMA](https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Markov_chain_algorithm)
+and
+[zlib](https://zlib.net/)
+compression libraries,
+and the
+[SQLite](https://www.sqlite.org/index.html) database.
+Incidentally, this shows WasmBoxC can run all of
+these today!
+
+Two results are shown for WasmBoxC, representing two implementations of memory sandboxing. The first is **explicit** sandboxing, in which each memory load and store is explicitly verified to be within the sandboxed memory using an explicit check (that is, an `if` statement is done before each memory access). This has **42%** overhead.
+
+The **OS-based** implementation uses the
+"[signal handler trick](https://github.com/WebAssembly/wabt/pull/1442/files#diff-e962256d2c336a13791ce03c1dae5d2fR106)" that
+[wasm](https://hg.mozilla.org/mozilla-central/file/3334d8dff757051c7a359818e0ceb5ad7852fdbc/js/src/wasm/WasmSignalHandlers.cpp)
+[VMs](https://docs.google.com/document/d/17y4kxuHFrVxAiuCP_FFtFA2HP5sNPsCD10KEx17Hz6M/edit#heading=h.tbi7hpbheoai)
+use.
+This technique reserves lots of memory around the valid range and relies on
+CPU hardware to give us a signal if an access is out of bounds
+(for more background see section 3.1.4 in
+[Tan, 2017](http://www.cse.psu.edu/~gxt29/papers/sfi-final.pdf)).
+That is fully safe and has the benefit of avoiding explicit bounds checks. It has
+just **14%** overhead! However, it cannot be used everywhere (it needs
+signals and CPU memory protection, and only works on 64-bit systems).
+
+There are more options in between those 14% and 42% figures.
+Explicit and OS-based sandboxing preserve wasm semantics perfectly, that is, a trap
+will happen exactly when a wasm VM would have trapped. If we are willing to relax
+that
+(but we may not want to [call it wasm](https://github.com/WebAssembly/wabt/pull/1432) if we do)
+then we can use masking sandboxing instead
+(see section 3.1.3 in
+[Tan, 2017](http://www.cse.psu.edu/~gxt29/papers/sfi-final.pdf)),
+which is 100% portable like explicit sandboxing and also prevents any accesses
+outside of the sandbox, and is somewhat faster at **29%** overhead. Other sandboxing
+improvements are possible too - almost no effort has gone into this yet.
+
+An interesting thing happens in the `lua_binarytrees` and `havlak` benchmarks,
+where WasmBoxC is actually faster than both gcc and clang in all sandboxing modes,
+up to 32%! How can we beat normal native builds, and by so much?
+[Looking into this](https://twitter.com/kripken/status/1262092956070109185),
+both of these benchmarks use a lot of `malloc`s and data structures with pointers.
+Like the [x32 ABI](https://en.wikipedia.org/wiki/X32_ABI), wasm is 32-bit,
+so pointers take half the space. Measuring the maximum process memory used
+in `lua_binarytrees`, WasmBoxC uses 33% less which helps a lot with CPU cache usage.
+While this makes a big difference on these two benchmarks, we are likely
+getting some speedup on the others as well due to this factor, as on average x32
+is faster than normal x64
+[by around 5-8%](https://en.wikipedia.org/wiki/X32_ABI#Details).
+Wasm is a nice way to get something
+like x32's benefits!
+
+The benchmarking here measures performance *within* the sandbox. It
+does not measure the speed of calls from the outside in or inside out. Such
+calls can be very fast because the sandboxed code is just C, which means that
+we can even inline across the sandbox boundary &mdash; safely! &mdash; if we do
+LTO. I verified that happens in the sandboxing example in the next section,
+see later. (Note, however, then using the signal handler trick may make things
+more complicated here.)
+
+Some final notes on performance:
+
+* We can compile WasmBoxC's C code with any native compiler. In the
+above we did so always with clang 9 for simplicity. The results vary a little
+when changing the compiler, for example the "none" sandboxing results go from
+14% up to 16% with gcc 9.2 or down to 11% with clang 11. There's nothing magical about
+that 14% figure &mdash; we are at the point where native compiler differences matter.
+
+* Results should improve over time as wasm adds more performance features
+like [simd](https://github.com/WebAssembly/simd) (note that the native compilers we
+compared to may have gained an advantage from autovectorization).
+
+* That WasmBoxC can reach 14% overhead shows that the
+cost of compiling through wasm (which cannot represent irreducible control
+flow, for example) is fairly low, and also that current compilers to wasm are
+not introducing significant unnecessary overhead.
+
+I've done my best to measure everything here carefully and accurately, but
+it's possible I've made a mistake somewhere. Please check my work and see if you
+get similar results!
+
+## Ease of use
+
+This section has a full example of WasmBoxC usage. Here are the source files:
+
+```c
+// my-code.c
+
+#include <stdint.h>
+#include <stdio.h>
+
+// We could also include the .wasm.h file for these,
+// but let's declare externs manually for the example.
+
+extern void wasmbox_init(void);
+
+extern uint32_t (*Z_twiceZ_ii)(uint32_t);
+
+extern uint32_t (*Z_do_bad_thingZ_ii)(uint32_t);
+
+int main() {
+  puts("Initializing sandboxed unsafe library");
+  wasmbox_init();
+  printf("Calling twice on 21 returns %d\n", Z_twiceZ_ii(21));
+  puts("Calling something bad now...");
+  Z_do_bad_thingZ_ii(1);
+  puts("(this will never be printed, as the bad thing will trap)");
+}
+```
+
+`main()` is pretty simple: Initialize, call something in the sandbox that does a
+computation for us, and call something that will trap inside the sandbox.
+(What's with the `Z_` stuff? See later in "API".)
+
+```c
+// unsafe-lib.c
+
+#include <stdlib.h>
+
+__attribute__((used))
+int twice(int x) {
+  return x + x;
+}
+
+__attribute__((used))
+int do_bad_thing(int size) {
+  // Allocate an unknown size here (so the LLVM optimizer doesn't know if the
+  // store later down is valid or not).
+  char* x = malloc(size);
+  // Write to an address that is definitely not in the sandbox (the default
+  // memory size is much smaller), which in wasm will trap.
+  x[1024 * 1024 * 1024] = 42;
+  // Avoid the optimizer knowing the store can never be observed.
+  return (int)x;
+}
+```
+
+`twice()` does what you'd expect, and `do_bad_thing` does a store that will
+definitely trap. (Ignore the details there; for this example we need the LLVM optimizer not to
+remove the bad code as undefined behavior!)
+
+And here's how easy it is to use WasmBoxC to get a fully sandboxed library linked with our normal trusted code:
+
+```bash
+# build our main code to an object normally
+$ clang my-code.c         -c -O3 -o my-code.o
+# build the unsafe library to C with emcc
+$ emcc unsafe-lib.c          -O3 -o unsafe-lib.wasm -s WASM2C --no-entry
+# build the unsafe library's C to an object normally
+$ clang unsafe-lib.wasm.c -c -O3 -o unsafe-lib.o
+# link normally
+$ clang my-code.o unsafe-lib.o -o program
+```
+
+Pretty simple! The only "interesting" part here is that the second command uses
+a wasm toolchain to compile the library to wasm and then to C. Here we use
+[Emscripten](http://emscripten.org)
+(see the [download instructions](https://emscripten.org/docs/getting_started/downloads.html)
+for how to get it; the zlib example in the next subsection also covers that). Note that there is
+no `-c` there, since from `emcc`'s point of view it is a full compile+link to wasm,
+after which it runs wasm2c for us, for which we pass `-s WASM2C`. Note also that
+we tell it
+`--no-entry` since we are building a library here.
+
+Running `./program` (just a normal executable, no VM here!) we get this:
+
+```bash
+$ ./program
+Initializing sandboxed unsafe library
+Calling twice on 21 returns 42
+Calling something bad now...
+[wasm trap 1, halting]
+```
+
+Exactly as expected!
+
+Aside from it being easy to build code with WasmBoxC, it's also easy to see
+how it works: just read the generated C code. For example, we called
+`Z_twiceZ_ii` earlier. If we're curious what that is, we can just read the C
+and see that aside from the function pointer indirection it's just a plain C function:
+
+```c
+static u32 w2c_twice(u32 w2c_p0) {
+  // [..the code in the body, ending in a return..]
+}
+```
+
+We can see exactly what parameters it takes, what it returns, read the typedef
+for `u32`, and so forth. The
+actual compiled code in the body (omitted here) is not very readable, but it is still C code.
+That lets us do things like add convenient printfs for debugging for example.
+This is also why we said earlier that LTO can inline across the
+sandbox: the sandboxed code is just more C code. Here is the call to `twice`
+and the printing of its result (in LLVM IR, and before LLVM LTO):
+
+```llvm
+define i32 @main() #0 {
+  [..]
+  %2 = load i32 (i32)*, i32 (i32)** @Z_twiceZ_ii, align 8, !tbaa !1
+  %3 = tail call i32 %2(i32 21) #8
+  %4 = tail call i32 (i8*, ...) @printf(i8*
+    getelementptr inbounds ([32 x i8], [32 x i8]* @.str, i64 0, i64 0), i32 %3)
+```
+
+and here is the result after LLVM LTO:
+
+```llvm
+define i32 @main() #0 {
+  [..]
+  %6 = tail call i32 (i8*, ...) @printf(i8* nonnull dereferenceable(1)
+    getelementptr inbounds ([32 x i8], [32 x i8]* @.str, i64 0, i64 0), i32 42)
+```
+
+Note how before LTO we load a function pointer, then call that with `21`, then
+`printf` that result. The function pointer is there because wasm2c emits very
+flexible code, more than we need in fact. We may want to add an option to avoid
+that indirection, but as you can see, LTO can fix that up already: in fact it
+manages to replace the call to `twice(21)` to a constant `42` in `main`,
+avoiding a call entirely!
+Optimizing across the sandbox boundary can be hugely beneficial, and it's
+fully safe.
+
+A final note on the emitted C code: if you do read it you'll notice it doesn't look very
+optimized. That's because wasm is very low level itself and wasm2c translates
+it in a simple and accurate way &mdash; it doesn't try to emit "optimal" C code.
+That simplicity means that to be fast we
+depend on C compiler optimizations, which is
+why the example builds with `-O3`.
+
+### WasmBoxing zlib, and memory management
+
+For a more complete walkthrough of porting an entire
+real-world library and not just a single file, see
+[this simple gist](https://gist.github.com/kripken/2d982aede096e456591b2821a9d41b31)
+which shows how easy it is to sandbox the zlib compression library. That
+includes the full details of how to get the wasm toolchain, so you can follow
+those instructions step-by-step from scratch.
+
+That also shows examples of how to do memory management in the sandbox,
+which is very simple:
+
+* The "memory" seen by the sandboxed code is a single buffer of memory that is
+`malloc`ed by the runtime. The sandboxing guarantees that the compiled code can
+only access that buffer, and nothing else.
+* Pointers in the sandbox are just 32-bit integers, which refer to locations in
+that buffer.
+* When you get a pointer from the sandbox, you can read that memory directly
+(that is, there is nothing that prevents the outside from looking in). You can
+do so by reading from the buffer at the offset of that pointer. That is, if
+the buffer is at absolute (normal, not in the sandbox) address `BUF` and you want
+to read data at the location a sandbox pointer of value `ptr` refers to, you
+would read at absolute address `BUF + ptr`.
+* The sandboxed code has its own `malloc` and `free`, which look normal to
+that code, but only reserve and release ranges of memory in the singleton buffer.
+If you want to pass some data into the sandbox, a simple way is to `malloc` in
+the sandbox (using the sandbox's `malloc`) and copy the data in.
+
+### Other WebAssembly toolchains
+
+This could be even simpler if we used clang for
+everything and not emcc. We can do that too!
+There is nothing specific to Emscripten
+about the WasmBoxC approach, all we need is a compiler to wasm, wasm2c, and
+C runtime support for wasm2c's output.
+Plain clang could work too since it has wasm support; assuming you already use
+clang, the only new build tool you'd need to add is wasm2c. Or you could
+use the
+[WASI SDK](https://github.com/WebAssembly/wasi-sdk) or anything else.
+[Adding wasm2c integration and runtime support in Emscripten](https://github.com/emscripten-core/emscripten/pull/11213)
+was not too hard and it probably would be similar elsewhere.
+
+I focused on Emscripten because I've already done the work to integrate
+wasm2c there for
+[other reasons](http://kripken.github.io/talks/2020/universal.html#/)
+anyhow. Emscripten also supports porting the
+widest range of software currently which is how we could
+run all the codebases mentioned in the benchmark section.
+And Emscripten does a lot
+of
+[useful](https://www.youtube.com/watch?v=_lLqZR4ufSI)
+[optimizations](https://docs.google.com/presentation/d/1EOpX47PszpuYOtkFc5XzDiWEPelH1e-LARsOZ4Ax-0w/edit?ts=5e38b7e2#slide=id.g6e4f40de0f_0_38)
+to emit fast wasm which helps see how fast WasmBoxC can be.
+
+## Related things
+
+### SFI
+
+Software Fault Isolation has already been mentioned in the introduction, with
+WasmBoxC mainly differing from it in the use of wasm and compiling that through
+C. As a result, one specific limitation in the WasmBoxC approach is that you must compile
+the code from source, unlike SFI methods that can operate on a binary.
+
+SFI using masking can achieve
+[overheads of 12%](http://www.cse.psu.edu/~gxt29/papers/sfi-final.pdf), which
+is significantly better than the 29% we observed. It is possible that WasmBoxC's
+masking sandboxing could be improved &mdash; no effort has gone into that yet.
+
+### MinSFI
+
+WasmBoxC is similar to
+[MinSFI](https://groups.google.com/forum/#!topic/native-client-dev/xs4khSwhAso)
+(itself inspired by
+[asm.js](https://en.wikipedia.org/wiki/Asm.js), one of the predecessors of
+wasm), whose key idea is to convert unsafe code to a sandboxed form. It does so on
+LLVM IR, while WasmBoxC converts to wasm which is inherently sandboxed
+(another example in this space is in
+[Kroll, Stewart, and Appel, 2014](https://www.cs.princeton.edu/~appel/papers/psfi.pdf)
+which works on CompCert's IR).
+
+Most of the work in such an approach is to properly define the sandboxed form
+(without making any security mistakes),
+and to implement it (which means a lot of tooling work &mdash; we need to be
+able to convert real-world code to that form). When MinSFI was created wasm didn't
+yet exist, and there wasn't a good alternative, but today wasm fits that need
+very well: all the hard work of speccing and implementing it has been done, and
+we can just use that in WasmBoxC.
+
+### RLBox-wasm
+
+[RLBox](https://arxiv.org/pdf/2003.00572.pdf)
+describes a framework for fine-grain isolation of untrusted code. One of the
+isolation mechanisms (see section 9 in the paper) uses wasm;
+call that "RLBox-wasm".
+
+Like RLBox-wasm, WasmBoxC compiles to wasm and then to native code.
+The difference is how the native code is generated. RLBox-wasm uses a customized build of
+[Lucet](https://github.com/bytecodealliance/lucet) which uses
+[CraneLift](https://github.com/bytecodealliance/wasmtime/tree/master/cranelift) to
+generate native code, while WasmBoxC compiles to C and then
+uses a standard C compiler like clang or gcc. To consider the performance
+difference caused by that, let's look at this quote from the RLBox paper:
+
+> We find that Wasm sandboxing [using RLBox with Lucet] imposes a 85% overhead [..] We attribute this slowdown largely to the nascent Wasm toolchains, which don’t yet support performance optimization on par with, say LLVM.
+
+WasmBoxC offers a useful comparison point in this context since it can use LLVM.
+Indeed, as WasmBoxC has 14%-42% overhead, it
+supports the quote's assertion that a large part of RLBox-wasm's current 85%
+overhead is due to CraneLift being fairly new (but it is
+[making good progress](https://bugzilla.mozilla.org/show_bug.cgi?id=1539399)).
+(However, RLBox-wasm is only measured on one benchmark, libGraphite, which
+limits our ability to generalize.)
+
+Another performance difference between RLBox-wasm and WasmBoxC is that RLBox-wasm
+has trampolines between the sandbox and the outside. Normally such trampolines
+do context and stack switching, etc., and can have significant overhead. In
+RLBox-wasm they use a
+[custom trampoline in Lucet](https://github.com/bytecodealliance/wasmtime/issues/1126)
+ which reduced the overhead by
+800%, almost to nothing.
+In comparison, with WasmBoxC as we saw earlier the sandboxed code is just plain C
+and there are no trampolines at all, and even inlining across the boundary works.
+
+An advantage RLBox-wasm has is that CraneLift is a dedicated wasm compiler, and
+so it may use techniques specific to wasm. For example, it might pin a register
+for the sandboxed memory, or it might use a nonstandard calling convention inside
+the sandbox. Those things could not be done with plain C code with WasmBoxC.
+For now it looks like LLVM's general advantage outweighs using a wasm-specific
+compiler, but in time that might change.
+
+Another advantage RLBox-wasm has over WasmBoxC is build times: WasmBoxC compiles to
+C and then runs a full C compiler while CraneLift is designed to compile wasm
+to native code.
+The WasmBoxC approach
+inherently adds extra steps in the compilation process. However, as mentioned
+throughout this post, going through C has benefits not just to speed but also to
+ease of use, so overall there are interesting tradeoffs in this space.
+
+## Current status
+
+### Security
+
+How secure is WasmBoxC? As with anything new you should assume it is experimental
+for now. However, it is built on well-tested foundations, in particular, wasm itself,
+wasm toolchain components like clang and Emscripten, and standard C compilers. The key wasm2c
+component has not been used in production yet to my knowledge, but good
+indications are that wasm2c passes the
+[wasm spec test suite](https://github.com/WebAssembly/testsuite) which covers many
+sandboxing and portability corner cases, and we've
+[fuzzed](https://github.com/WebAssembly/binaryen/pull/2772)
+[it](https://github.com/WebAssembly/binaryen/pull/2791).
+
+Another useful thing is that the C output can be inspected for safety. It's easy to see that all memory accesses go
+through the same few load/store methods, and that those are guaranteed to stay
+within the sandbox. While C isn't a memory-safe language, the very simple form of C we emit
+should in fact be safe and easily seen as such.
+
+It would be great for security people to take a look at WasmBoxC &mdash; please help out!
+
+### Compatibility
+
+In terms of what code can be sandboxed right now, in the current implementation it's
+basically anything Emscripten can port to wasm, which is quite a lot &mdash; it's used
+to port many entire
+[game](https://docs.unity3d.com/Manual/webgl-gettingstarted.html)
+[engines](https://docs.godotengine.org/en/stable/development/compiling/compiling_for_web.html),
+for example, and as we saw it can port all the codebases we benchmarked.
+In particular it includes support for most of the C
+and C++ languages and standard libraries, including tricky things like
+`setjmp` (which is needed for Lua). However, a few things Emscripten
+supports have not been enabled in WasmBoxC yet, like C++ exceptions
+and pthreads.
+
+### Other limitations
+
+wasm2c output is a simple subset of C, and it builds with gcc or clang on all
+machines I've tested,
+[but it doesn't work on MSVC yet](https://github.com/WebAssembly/wabt/pull/909)
+(at the moment it uses some gcc/clang intrinsics like `__builtin_expect`).
+Help is welcome in implementing support for that compiler and others!
+
+A concrete limitation right now of WasmBoxC is that while a single C file is
+nice and simple, for a large project it can compile pretty slowly, especially
+when optimizing. I've generated
+C files that take clang and gcc
+[minutes to compile](https://twitter.com/kripken/status/1262166778848763904)
+(others have seen
+[even worse](https://twitter.com/whitequark/status/1263015563028303873)).
+This is unfair to those compilers,
+of course, since C compilers aren't expected to parallelize inside each source file.
+We could look into optionally emitting separate files in wasm2c to avoid that.
+
+## API questions
+
+I don't have many thoughts on this side as it isn't really my area. I
+mostly just left the current wasm2c C API as it is, which is where those
+`Z_` name manglings come from. You can use WasmBoxC right now, but you need
+to work at a fairly low level in C to bridge your code and the sandboxed code.
+Higher-level things are possible: The
+[RLBox people](https://plsyssec.github.io/rlbox_sandboxing_api/sphinx/#)
+have done a lot of interesting work in this space on automation, tainting, etc.,
+and the
+[Sandboxed API](https://security.googleblog.com/2019/03/open-sourcing-sandboxed-api.html)
+is another approach that provides convenient and safe APIs for interacting
+with sandboxed code.
+
+A specific example of something that could be improved is files. When doing sandboxing like this you
+don't want to give the sandboxed code file access, and the current implementation
+of course prevents that. If you sandbox a library that does need file data, the usual
+pattern is to malloc inside the sandbox and copy data over to it (as is done
+in the
+[gist example of zlib](https://gist.github.com/kripken/2d982aede096e456591b2821a9d41b31#file-main-c-L80)).
+There may be better things we can do, like bundling of data files.
+
+On the topic of files, you can enable support for them optionally, which is how
+the benchmarks were run: Lua needs to load files, and SQLite also needs to write and
+seek in its database file. Currently when `emcc` is used with the
+`WASM2C` flag it will fully sandbox things if you build a library (for
+which as we saw you should pass `--no-entry`), while if you build a normal
+executable with a `main()` then it gives the code normal OS access. We probably
+want to think about a better design here, but meanwhile this has been useful
+for testing and benchmarking, and also
+[as a way to get portable builds](http://kripken.github.io/talks/2020/universal.html#/).
+
+## Safe languages
+
+WasmBoxC may be especially
+interesting with a memory-safe language like Rust, Swift, or Go because it can help remove the
+unsafety of C libraries which would otherwise mar the security of an application
+written almost entirely in a safe language.
+
+In fact, these languages generally have a bindings generator for C libraries.
+Perhaps the build system could have an option to WasmBox a library and
+generate appropriate bindings for it automatically? That would be as
+convenient as the hypothetical `--sandbox` flag we wished for in the introduction!
+If it's that easy, and since the WasmBoxC overhead is so low, perhaps
+sandboxing of C libraries could become a common practice in safe languages? (I'd
+love to collaborate on this if someone is interested!)
+
+Another interesting possibility here might be to compile not to C but to the
+memory-safe language itself, see for example
+[wasm-to-rust](https://github.com/CryZe/wasm-to-rust). That would let you do
+everything in the safe language with no C at all. That wouldn't make the
+sandboxing itself any more secure, but it could prevent bugs in the interface code,
+and might be more convenient.
+
+## Conclusion
+
+The title of this post describes WasmBoxC as "**Simple, Easy, and Fast VM-less Sandboxing**".
+*Simplicity* is the key from which all the rest of the benefits come:
+WasmBoxC compiles to a simple subset of C and it does so
+in a simple way, using existing wasm toolchains.
+By compiling to C we can run a C compiler on it which is easy and
+gives us fast code. It also makes it easy to
+communicate with the sandbox. And by using existing wasm toolchains we have well-tested and convenient
+compilers that let us build and sandbox code in an easy way.
+
+I'm not aware of a sandboxing approach that is easier to use than WasmBoxC. And it's
+interesting that we can reach just 14%-42% overhead with such a simple approach!
+It turns out that we can be both simple and fast.
+
+**Thank you** to Sam Clegg, John Regehr, Ben Smith, and Patrick Walton for comments on drafts of this post, and a
+special thank you to Ben Smith for writing wasm2c and to Andre Weissflog for an
+[inspiring tweet](https://twitter.com/FlohOfWoe/status/1011523018428780544).
