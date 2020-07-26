@@ -172,7 +172,7 @@ Some final notes on performance:
 
 * We can compile WasmBoxC's C code with any native compiler. In the
 above we did so always with clang 9 for simplicity. The results vary a little
-when changing the compiler, for example the "none" sandboxing results go from
+when changing the compiler, for example the "explicit" sandboxing results go from
 14% up to 16% with gcc 9.2 or down to 11% with clang 11. There's nothing magical about
 that 14% figure &mdash; we are at the point where native compiler differences matter.
 
@@ -249,7 +249,7 @@ int do_bad_thing(int size) {
 definitely trap. (Ignore the details there; for this example we need the LLVM optimizer not to
 remove the bad code as undefined behavior!)
 
-And here's how easy it is to use WasmBoxC to get a fully sandboxed library linked with our normal trusted code:
+And here's how easy it is to use WasmBoxC to get a fully sandboxed library linked with our normal code:
 
 ```bash
 # build our main code to an object normally
@@ -481,7 +481,7 @@ ease of use, so overall there are interesting tradeoffs in this space.
 
 How secure is WasmBoxC? As with anything new you should assume it is experimental
 for now. However, it is built on well-tested foundations, in particular, wasm itself,
-wasm toolchain components like clang and Emscripten, and standard C compilers. The key wasm2c
+wasm toolchain components like clang, and standard C compilers. The key wasm2c
 component has not been used in production yet to my knowledge, but good
 indications are that wasm2c passes the
 [wasm spec test suite](https://github.com/WebAssembly/testsuite) which covers many
