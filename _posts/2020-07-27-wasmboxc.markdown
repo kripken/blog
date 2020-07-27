@@ -475,6 +475,12 @@ inherently adds extra steps in the compilation process. However, as mentioned
 throughout this post, going through C has benefits not just to speed but also to
 ease of use, so overall there are interesting tradeoffs in this space.
 
+**edit**: It
+[was pointed out to me](https://twitter.com/deiandelmars/status/1287794353490911233)
+that an
+[early version of RLBox](https://arxiv.org/pdf/1912.02285.pdf) in January 2019
+used wasm2c, which I was not aware of.
+
 ## Current status
 
 ### Security
