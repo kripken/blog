@@ -72,14 +72,14 @@ Here's a simple example:
 
 This little example uses the `spectest` import for logging, which works in the official WebAssembly test suite, and so it should work in any interpreter compatible with that, like the spec interpreter or Binaryen's `wasm-shell`. Here is how you can build and run it:
 {% highlight shell %}
-$ wasm-opt input.wat -O --asyncify --print > output.wat
+$ wasm-opt input.wat -O1 --asyncify --print > output.wat
 $ wasm-shell output.wat
 BUILDING MODULE [line: 1]
 (i32.const 1)
 (i32.const 2)
 (i32.const 3)
 {% endhighlight %}
-First we process the file with `wasm-opt`, running the Asyncify pass and also optimizing (optimizing is very important here for size and speed; see details later). We then print out the result in text form, since that's what `wasm-shell` expects and also it lets you inspect the instrumented code if you're curious (otherwise we could do `-o output.wasm` to get a binary). Then if we run it in the shell we get some logging from that tool (`BUILDING ..`), and then the expected three logged numbers: `main` prints `1`, then while it is sleeping we print `2`, and then after we resume `main` continues and prints `3`.
+First we process the file with `wasm-opt`, running the Asyncify pass and also optimizing (optimizing with `-O1` is very important here for size and speed; see details later). We then print out the result in text form, since that's what `wasm-shell` expects and also it lets you inspect the instrumented code if you're curious (otherwise we could do `-o output.wasm` to get a binary). Then if we run it in the shell we get some logging from that tool (`BUILDING ..`), and then the expected three logged numbers: `main` prints `1`, then while it is sleeping we print `2`, and then after we resume `main` continues and prints `3`.
 
 Note how even though we call `main` twice (once to start it, once to continue after sleeping), it only executes once (split into two parts), and therefore we only see `1` and `3` printed once. For comparison, if we ran the original uninstrumented `input.wat` (after removing the `asyncify_*` calls from it), then we'd get this:
 {% highlight shell %}
@@ -444,6 +444,8 @@ It is **very important** to optimize while running Asyncify, for both code size 
 </figure>
 
 Running `wasm-opt --asyncify` *without* optimizations leads to huge code sizes, while `-O --asyncify` (which uses Binaryen's default optimization level) produces code sizes like what we'd expect given the data from before. Remember to optimize, both when running `wasm-opt` directly or when calling a compiler that uses it like `emcc`!
+
+Note that you may need to be careful with the optimization level. In the pure WebAssembly case, when your runtime is in WebAssembly, the Binaryen inliner may inline code into the runtime that can confuse Asyncify. Until Binaryen adds a "noinline" annotation to functions, we need to avoid that manually. You can do that by optimizing with `-O1` but not higher (you can also use higher optimization levels, but disable the inliner, say using `-O -ocimfs=1`; see `wasm-opt --help`).
 
 # Final thoughts
 
