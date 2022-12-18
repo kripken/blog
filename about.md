@@ -22,5 +22,9 @@ Works at Google. Previously: Mozilla, [Syntensity](https://www.youtube.com/watch
     {% include icon-twitter.html username=site.twitter_username %}
   </li>
   {% endif %}
+
+  <li>
+    <a href="https://fosstodon.org/@kripken"><b>@kripken</b> on Mastodon</a>
+  </li>
 </ul>
 
