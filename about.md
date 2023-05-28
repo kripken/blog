@@ -24,5 +24,9 @@ Works at Google. Previously: Mozilla, [Syntensity](https://www.youtube.com/watch
   <li>
     <a href="https://fosstodon.org/@kripken"><b>@kripken</b> on Mastodon</a>
   </li>
+
+  <li>
+    <a href="https://bsky.app/profile/azakai.bsky.social"><b>@azakai.bsky.social</b> on Bluesky</a>
+  </li>
 </ul>
 
