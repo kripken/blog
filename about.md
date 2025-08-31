@@ -19,14 +19,12 @@ Works at Google. Previously: Mozilla, [Syntensity](https://www.youtube.com/watch
     <a href="https://bsky.app/profile/kripken.com"><b>@kripken.com</b> on Bluesky</a>
   </li>
 
-  {% if site.twitter_username %}
-  <li>
-    {% include icon-twitter.html username=site.twitter_username %}
-  </li>
-  {% endif %}
-
   <li>
     <a href="https://fosstodon.org/@kripken"><b>@kripken</b> on Mastodon</a>
+  </li>
+
+  <li>
+    (used to be "kripken" on twitter)
   </li>
 </ul>
 
