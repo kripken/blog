@@ -1,11 +1,11 @@
 ---
 layout: post
-title:  How I'd've Ended Game of Thrones
+title:  My Game of Thrones Ending
 date:   2025-09-09 00:00:00 -0700
 categories: fantasy
 ---
 
-When an important TV show nears its end, I like to write up how I would end it. Then I watch the final season or episode, and compare. Usually the show is much better! But, in my personal opinion, I prefer my own ending to Game of Thrones, and that is what is written up here.
+Sometimes, when a TV show nears its end, I like to write up how I would end it. Then I watch the final season or episode, and compare. Usually the show is much better! But, in my personal opinion, I prefer my own ending to Game of Thrones, and that is what is written up here.
 
 Why am I writing this now? Game of Thrones came up randomly today in a conversation with my nephew and brother. I ended up in something of a rant, I'm afraid... Turns out the feelings from back then were only forgotten, not lost. So here they are.
 
@@ -22,34 +22,37 @@ The Battle of Winterfell:
   * **Jamie Lannister dies saving Bran**: ironic as the show began with Jamie trying to kill him.
   * **Melisandre tries many things, but all fail.** (see below)
   * **The Night King dies by Arya backstab**. Yes, I swear I predicted the show on this! But, hear me out, for these are my reasons.
-    * Arya was trained as a Faceless Man, a servant of the Many-Faced God and that god uses her as its agent now. **The Many-Faced God is the god of Death**, but importantly, death in the *natural* sense: a part of life, and sometimes necessary as the result of an assassination, but still, death in its proper place. On the other hand, **the White Walkers are a corruption of death**, the dead returning to life without limit and extinguishing the natural order. At Winterfell, *Life failed to stop Death, and so Death steps in*, using Arya, to restore the proper order.
+    * Arya was trained as a Faceless Man, a servant of the Many-Faced God and that god uses her as its agent now. **The Many-Faced God is the god of Death**, but importantly, death in the *natural* sense: a part of life, and sometimes necessary as the result of an assassination, but still, death in its proper place. On the other hand, **the White Walkers are a corruption of death**, the dead returning to life without limit and extinguishing the natural order. At Winterfell, *Life failed to stop Death, and so Death steps in*, using Arya.
+      * This is why the Many-Faced God allowed her training and granted her the ability to take faces and shrug off injuries!
   * With the Night King gone, **the Army of the Dead falls**, shattered and useless.
   * **But! Another White Walker raises all the newly dead** - plus the recently-dead of Stannis etc. from the Battle of the Bastards - and the battle is truly and utterly lost. **Winterfell falls. The North falls. The survivors flee south.**
 
 The Battle at the Neck:
   * **The survivors regroup at the Neck, Moat Cailin, the last place where they can possibly stop the dead from overrunning all the rest of Westeros.** Their numbers grow with some forces that didn't reach Winterfell in time, and local forces from Riverrun.
+  * **A second "final battle" commences with the Army of the Dead.**
   * **Jon + his dragon sacrifice themselves to slay the last of the White Walkers.**
   * **The Army of the Dead is finally defeated for good.**
-    * Or is it? A mysterious figure is seen in the dark of night, going through the remains of the walkers and wights.
+    * Or is it? A mysterious figure is seen in the dark of night, going through the remains of the Walkers and wights.
 
 Politics:
   * A bittersweet victory, but short-lived: **Cersei Lannister approaches, bringing her own vast Westerosi armies plus the Golden Company.**
   * The battle is a close one, as Dany is loath to risk her one remaining dragon. But, finally, mad with grief after Jon's death, needing his sacrifice not to have been in vain, **Dany burns her enemies to ash**. Cersei flees and Dany + allies follow as soon as they are recovered.
 
 King's Landing
-  * **The City's own defenses are not all Dany finds at the capital: There is also another Army of the Dead**, for Qyburn has continued "The Work" he began with undead Gregor Clegane, finally finishing it with samples from the Battle at the Neck. Cersei, through Qyburn, commands countless wights alongside her living troops, and can raise any that die on either side.
+  * **The City's own defenses are not all Dany finds at the capital: There is also another Army of the Dead**, for Qyburn has continued "The Work" he began with undead Gregor Clegane, finally finishing it with samples from the Battle at the Neck. Cersei, through Qyburn, commands wights alongside her living troops, and can raise any that die on either side.
   * Dany intends to burn King's Landing to the ground - the only way to stop the undead once and for all - but Arya gets her to delay, for the Many-Faced God once more uses her as its agent.
     * We see "Jamie" (who died at Winterfall saving Bran, recall) return to the city.
-    * **"Jamie" kills Cersei, repeating history, now as a queenslayer and not kingslayer. This is Arya using Jamie's face, who she took back then.** She leaves the face on as she does it, so Cersei believes her brother killed her.
-  * **Qyburn and his evil are ended by Melisandre, finishing her quest of Life against Death:**
-    * Melisandre succeeds because she arrives at the right place at the right time: **because she saw it in the flames**. But this time, she does *the opposite* of what she thinks her god wants. *She has realized that, as Davos told her, her god is evil* (and he was right; see Shireen).
+    * **"Jamie" kills Cersei, repeating history, now as a queenslayer and not kingslayer. This is Arya using Jamie's face, which she took from his corpse earlier.** She leaves the face on as she does the killing, so Cersei believes her brother killed her.
+  * **Qyburn remains a danger, and his whereabouts are unknown**. The living Lannister soldiers and allies are in chaos after Cersei's death, but Qyburn's wights are a growing danger: Perhaps Qyburn does not care if no living person remains in King's Landing, and Dany orders her troops in, hoping to find and stop Qyburn.
+  * **Qyburn and his evil are ended by Melisandre, finishing her quest of Life against Death,** aided by Arya (who, again, acts as the agent of the Many-Faced God against the corruption of Death):
+    * Melisandre finds Qyburn **using what she sees in the flames**. But! She was shown a *different* place. That is, she is shown place A, and knows that is *not* where Qyburn is, and goes to the most different but plausible place B; she does *the opposite* of what she thinks her god wants. **Melisandre has realized that, as Davos told her after burning Shireen, her god is evil**.
       * "*In Winterfell I saw the truth, when all my efforts failed. The Red God, we call our Lord, and R'hllor, but the more true name is the Lord of Light, and it is the pale, colorless illumination that shines over the endless ice to the north of this continent. The color of snow, and of the White Walkers.*" - strongly hinting that what she thought were her god's communications were from the very evil she was trying to fight.
-    * **Qyburn's death death destroys all the remaining undead,** and Melisandre burns whatever notes he wrote about the process of raising them. She is, finally, done.
-  * Or is she? Melisandre was aided by Arya here - again, the Many-Faced God works to quell the undead, to restore proper Death. But **the Many-Faced God is not finished with Arya**: she has taken many faces, too many, and becomes more and more "no one" - a pure agent of the god, and no longer a Stark girl. Arya thought she got away with all the powers but none of the costs, but that was not so.
-    * **Melisandre saves Arya - perhaps attempting to make up for killing another girl, Shireen.** She holds Arya's face very close to her own - exactly she did in [that scene from season 3](https://www.youtube.com/watch?v=dp9xhOvhTFk&t=89s) - and calls Arya back to herself. "*No more faces, girl!*"
+    * **Qyburn's death destroys all the remaining undead,** and Melisandre burns whatever notes he wrote about the process of raising them. She is, finally, done.
+    * Or is she? Nearby, **the Many-Faced God is not finished with Arya**: she has taken many faces, too many (several just this day, to infiltrate King's Landing), and becomes more and more "no one" - a pure agent of the god, and no longer a Stark girl. Arya thought she got away with all the powers but none of the costs, but it was not so.
+    * **Melisandre saves Arya** (perhaps attempting to make up for killing another girl, Shireen). She holds Arya's face very close to her own - exactly as she did in [that scene from season 3](https://www.youtube.com/watch?v=dp9xhOvhTFk&t=89s) - and calls Arya back to herself. "*No more faces, girl!*"
 
 Epilogue
-  * Tormund and Brienne marry. With Jaime dead, she is free to love again.
+  * Tormund and Brienne marry. (With Jaime dead, she is free.)
   * Arya sails beyond the western sea
   * Dany sits the Iron Throne, is pregnant with Jon's child(ren)
   * Tyrion is Hand of the Queen
@@ -65,26 +68,26 @@ What was the show missing? **First,** it left many questions open. Not all shoul
   * Who is the Red God, "the voice in the flames" we keep hearing about?
   * Why does Arya train with servants of the god of Death?
   * Why does Qyburn create an undead Gregor Clegane?
+  * Etc.
 
-Etc. Now, "Because an undead Gregor Clegane is cool" is a fine answer for a superhero movie. But was all of that really not leading anywhere more? Was it not hinting something about Qyburn, who seemed incredibly fascinated by the wight that was brought down to King's Landing..?
+Now, "Because an undead Gregor Clegane is cool" is a fine answer for a superhero movie. But was all of that really not leading anywhere more? Was it not hinting something about Qyburn, who seemed incredibly fascinated by the wight that was brought down to King's Landing..?
 
-**Second**, a satisfying ending needs to treat the main themes of the show with the proper weight. The undead are the very first scene we get, and they terrify us til the last season. But then, in the show, they are dispatched in the course of one episode (called by some more of a Short Evening than a Long Night). That felt far too easy. And Qyburn was right there! The perfect opportunity for someone to dabble in raising the dead, keeping this theme going til the very end.
-  * Also, this puts raisnng (symbolizing profliferation of nuclear weapons or whatever you want)
-not just dragons but undeath
+**Second**, a satisfying ending needs to treat the main themes of the show with the proper weight. The undead are the very first scene we get, and they terrify us til the last season. But then, in the show, they are dispatched in the course of one episode (called by some more of a Short Evening than a Long Night). That felt far too easy. And Qyburn was right there! Well, not there at Winterfell, but you know what I mean: The perfect person to dabble in raising the dead, keeping this theme going til the very end.
+  * Raising the dead symbolizes a weapon too dangerous to exist, as we see its proliferation. We already have one such symbol: the dragons, so this adds to that moral point.
 
+**Third**, the ending should tie together the different themes and make sense of them. The White Walkers and Arya: Is there not a natural way those two fit? Death (the god behind Arya) vs undeath (White Walkers); death as a horrible but necessary part of existence, vs death corrupted to consume all. Those are natural enemies. We heard about both for seasons. **That is why I put Arya as killing the Night King.** I don't think it's a coincidence that I predicted that part right, and I would not be surprised to see this happen in GRRM's future books. The show, for its part, seems aware of the natural connection here - it chooses Arya correctly - but does nothing else. By making Arya have no downsides to her training, by not mentioning the god of the Faceless Men that trained her, and not touching on the importance of Death to any of this, they basically left this topic alone. Sometimes it's good to keep things subtle, but if the rule is "show, not tell", I don't think they even showed the convergence and resolution of these themes.
 
-**Third**, the ending should tie together the different themes and make sense of them. The White Walkers and Arya: Is there not a natural way those two fit? Death (the god behind Arya) vs undeath (White Walkers); death as a horrible but necessary part of existence, vs death corrupted to consume all. Those are natural enemies. We heard about both for seasons. This is why I put Arya as killing the Night King! I don't think it's a coincidence that I predicted that part right, and I would not be surprised to see this happen in GRRM's future books. The show, for its part, seems aware of the natural connection here - it chooses Arya correctly - but does nothing else. By making Arya have no downsides to her training, by not mentioning the god of the Faceless Men that trained her, and not touching on the importance of Death to her abilities, they basically left this topic alone. Sometimes it's good to keep things subtle, but if the rule is "show, not tell", I don't think they even showed the convergence and resolution of these themes.
+**Fourth**, lore is a big part of fantasy, in my mind. We learned no new lore in the last season - I mean, things like important parts of history or other aspects of how the world came to be, and how it works. But we could have. For example, it seems like **resurrection and prophecy have mostly been on the side of evil** (a reversal of the usual fantasy tropes): All the resurrected men (Jon and Beric) achieved in the end was to give a dragon to the undead, which was the White Walker's only way to destroy the Wall. I would have leaned into that by showing Melisandre figure this out: that her god must indeed be evil, that his visions and resurrections were all a ploy. And, there is a lot of other fun lore that could be added, say:
+  * Where a prophecy says a horn can bring down the Wall, the truth was it meant the horns on a dragon.
+  * Targaryens knew not to fly dragons north of the Wall for that very reason, but Dany was not informed, having lost her parents. That loss of family secrets, that discontinuity, gave the White Walkers a way to trick the Living and get a dragon.
 
-**Fourth**, lore is a big part of fantasy, in my mind. We learned no new lore in the last season - I mean, things like important parts of history or other aspects of how the world came to be, and how it works. But we could have. For example, it seems like **resurrection and prophecy have mostly been on the side of evil** (a reversal of the usual fantasy tropes): All the resurrected men (Jon and Beric) achieved in the end was to give a dragon to the undead, which was the Walker's only way to destroy the wall. I would have leaned into that:
-  * As above, show Melisandre figure this out, and that her god must indeed be evil.
-  * Explain some prophecies by it: Where a prophecy says a horn can bring down the Wall, the truth was it meant the horns on a dragon. And, generations ago, wiser folk knew not to fly dragons north of the Wall for that very reason, but Dany lost all the Targaryen knowledge when her family was severed, a discontinuity, and the White Walkers found a way to trick the Living and get them a dragon.
-Maybe this examples could be better. But what I'm aiming for is that feeling of "So *that's* what was going on all along" or "So *that's* explains all this other stuff" that, I think, makes for a good ending.
+Maybe these examples could be better, but my point is there could have been lore!
 
 ### Stuff I Got Wrong
 
-Reading my 2019 notes, I did do some things poorly. All my "epilogue" stuff is kind of predictable, and I like that the show avoided some of those obvious things.
+Reading my 2019 notes, I did do some things poorly. All my "epilogue" stuff ("Tormund and Brienne marry") is kind of predictable, and I like that the show avoided some of those obvious things.
 
-What do I think of Bran ending up on the Iron Throne? Well, you can see from my notes that I didn't know what to do with him at all. I like that the show wrapped his story up in an alarming, shocking manner. I wish it had been better prepared - some hints during seasons, rather than a big jump in his behavior between seasons - but it's a good idea.
+What do I think of **Bran ending up on the Iron Throne?** Well, you can see from my notes that I didn't know what to do with him at all! I like that the show wrapped his story up in an alarming, shocking manner, that is nonetheless consistent. I wish it had been better prepared - some hints during seasons, rather than a big jump in his behavior between seasons - but it's a very good idea.
 
-Still, I prefer my ending overall.
+I still prefer my ending to the show's. But I hope to love GRRM's much more.
 
