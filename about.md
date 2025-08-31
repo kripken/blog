@@ -8,6 +8,8 @@ Alon created [Emscripten](http://emscripten.org) and [Binaryen](https://github.c
 
 [Ported](https://www.youtube.com/watch?v=WDUPZRQf7oc) Doom to the Web in [2011](https://games.slashdot.org/story/11/05/31/1833239/doom-ported-to-the-web).
 
+Loves fantasy novels and Agatha Christie.
+
 Works at Google. Previously: Mozilla, [Syntensity](https://www.youtube.com/watch?v=J8KMwU1UJmw), [mathy stuff](http://www.jmlr.org/papers/volume10/zakai09a/zakai09a.pdf). The opinions stated here are my own, not those of my company.
 
 <ul>
