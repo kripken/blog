@@ -1,9 +1,11 @@
 ---
 layout: post
-title:  "Alien: Earth isn't Alien"
+title:  "When is an Alien NOT an Alien?"
 date:   2025-09-22 00:00:00 -0700
 categories: scifi
 ---
+
+(spoilers for Alien: Earth season 1)
 
 **Alien: Earth** is a good sci-fi show in many ways! But is it *Alien* content in the way that **Alien: Romulus** or **Alien: Covenant** are? Despite using the familiar naming format, I would say no.
 
@@ -12,11 +14,11 @@ The basic rules of an Alien movie are:
 1. **The Alien is fucking terrifying.**
 2. **No really, the Alien is so terrifying that any attempts to harness and control its power fail horribly.**
 
-(yes, I know it's called a xenomorph but Alien is shorter)
+(yes I know it's called a xenomorph but Alien is shorter)
 
-These rules are why Alien films work so well: First we get scared on a visceral level when we see the Alien slaughter characters we care about. Second, we learn that Evil Management is trying to use the Alien somehow, but it is just so wildly powerful that containment always fails; the Alien is terrifying at that level as well.
+These rules are why Alien films work so well: First we get scared on a visceral level when we see the Alien slaughter characters we care about. Second, we learn that Evil Management is trying to use the Alien somehow, but it is just so wildly powerful that containment always fails.
 
-This is a good recipe! And we can see it even in the Alien vs Predator movies (which are certainly "atypical" Alien content): The Aliens slaughter the Predators who tried to control them. TODO watch end of movie 2
+This is a good recipe! And we can see it even in "atypical" Alien content like the Alien vs Predator movies: The Aliens slaughter the Predators who tried to control them. TODO watch end of movie 2
 
 **Alien: Earth**... goes a different way:
 
@@ -26,6 +28,8 @@ This is a good recipe! And we can see it even in the Alien vs Predator movies (w
 * Finally, there are other monsters in the show - some arguably worse! - preventing the Alien from standing out. (But the eyeball creature is so cool, this one I forgive.)
 
 In the end, this is not a show about a terrifying Alien. This is a show about the hybrid children, their souls transported from their dying bodies à la Black Mirror, now in conflict with their "parents". And with some dangerous alien lifeforms in the mix.
+
+So, when is an Alien *not* an Alien? When is a xenomorph *not* a xenomorph? When you show it behaving like a loyal dog. Docile. Controlled.
 
 If **Alien: Earth** were an *Alien* show, the xenomorph would rip Wendy into pieces.
 
