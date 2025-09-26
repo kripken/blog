@@ -18,7 +18,23 @@ The basic rules of an Alien movie are:
 
 From **Alien (1979)** to **Alien: Romulus (2024)** - even including the oddball **Alien vs Predator** movies - this recipe works: First, we get scared on a visceral level when we see the Alien slaughter characters we care about. Second, we learn that Evil Management is trying to use the Alien somehow, but it is just so wildly powerful that containment always fails.
 
-But **Alien: Earth (2025)** goes a different way:
+**Alien: Earth (2025)'s** promotional art suggests continuity:
+
+![Alien: Earth on Hulu](https://img.hulu.com/user/v3/artwork/ac314a24-c615-48ee-8e24-b26de75e64ef?base_image_bucket_name=image_manager&base_image=e5c5616d-f830-4904-be29-eebf1dd2217b&size=1200x630&format=webp&operations=%5B%7B%22gradient_vector%22%3A%22(0%2C0%2C0%2C0.5)%7C(0%2C0%2C0%2C0)%7C(0%2C600)%7C(0%2C240)%22%7D%2C%7B%22overlay%22%3A%7B%22position%22%3A%22SouthEast%7C(30%2C30)%22%2C%22operations%22%3A%5B%7B%22image%22%3A%22image_manager%7Cfe4f02cd-31fd-4b04-9381-55593cc97e3b%22%7D%2C%7B%22resize%22%3A%22204x204%7Cmax%22%7D%2C%7B%22extent%22%3A%22204x204%22%7D%5D%7D%7D%2C%5D)
+
+Exact same sickly-green fissure as from 1979:
+
+![Alien 1979](https://m.media-amazon.com/images/M/MV5BN2NhMDk2MmEtZDQzOC00MmY5LThhYzAtMDdjZGFjOGZjMjdjXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg)
+
+Other graphics suggest the same recipe will be used:
+
+![Facehugger on Earth](https://cdn.abcotvs.com/dip/images/16667231_060525-otrc-alienearth-img.jpg)
+
+![Alien drooling above Earth](https://resizing.flixster.com/F-DapncwWWUAsdhUdVunOb4dJXU=/ems.cHJkLWVtcy1hc3NldHMvdHZzZXJpZXMvODNkMTg2YmUtODVlMC00NjBiLThjYTMtNzQ1MDZlZTMwNThmLmpwZw==)
+
+Definitely looks like the Alien will be a terrifying threat to our planet!
+
+But **Alien: Earth** season 1 goes a different way:
 
 * Many episodes pass before the Alien kills a named character.
 * We see the Alien in, um, embarrassing situations: grabbed awkwardly by the tongue, later struggling as it is wrestled with.
@@ -26,6 +42,8 @@ But **Alien: Earth (2025)** goes a different way:
 
 This is not a show about a terrifying Alien and the ghastly consequences of meddling with it. This is a show about the hybrid children, superbeings whose souls were transported from their dying bodies à la Black Mirror, in conflict with their "parents". And with some dangerous alien lifeforms in the mix (in fact, most of them more horrifying than the Alien).
 
-The show has many good parts: Timothy Olyphant, the eye-monster, some perfectly-delivered lines like the one I paraphrase in the title. But if **Alien: Earth** had an actual xenomorph, it would rip Wendy into shreds.
+The show has many good parts: Timothy Olyphant, the eye-monster, some perfectly-delivered lines like the one I paraphrase in the title. But if **Alien: Earth** had an actual xenomorph, it would rip Wendy and everyone she cares about into shreds.
+
+
 
 TODO watch the second to the end AvP
