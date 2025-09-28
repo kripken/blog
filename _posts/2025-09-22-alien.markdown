@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "When is an Alien NOT an Alien?"
-date:   2025-09-22 00:00:00 -0700
+date:   2025-09-28 00:00:00 -0700
 categories: scifi
 ---
 
@@ -11,6 +11,8 @@ The basic rules of an Alien movie are:
 
 1. **The Alien is absolutely terrifying.**
 2. **No really, the Alien is so terrifying that any attempt to harness its power fails horribly.**
+
+(yes, I know the proper term is "xenomorph," but Alien is shorter)
 
 From **Alien (1979)** to **Alien: Romulus (2024)** this recipe works: First, we get scared on a visceral level when we see the Alien slaughter characters we care about. Second, we learn that Evil Management is trying to use the Alien somehow, but it is just so wildly powerful that containment - much less control - never succeeds. (Even the oddball **Alien vs Predator** movies repeat the theme: Aliens are too dangerous even for Predators to manage!)
 
