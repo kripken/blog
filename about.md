@@ -4,13 +4,15 @@ title: About
 permalink: /about/
 ---
 
+Software engineer at Google. Previously: Mozilla, [Syntensity](https://www.youtube.com/watch?v=J8KMwU1UJmw), Ph.D. in Neural Computation (mostly [math](http://www.jmlr.org/papers/volume10/zakai09a/zakai09a.pdf)).
+
 Alon created [Emscripten](http://emscripten.org) and [Binaryen](https://github.com/WebAssembly/binaryen) and co-created [WebAssembly](http://webassembly.org/).
 
 [Ported](https://www.youtube.com/watch?v=WDUPZRQf7oc) Doom to the Web in [2011](https://games.slashdot.org/story/11/05/31/1833239/doom-ported-to-the-web).
 
 Loves fantasy novels and Agatha Christie.
 
-Works at Google. Previously: Mozilla, [Syntensity](https://www.youtube.com/watch?v=J8KMwU1UJmw), [mathy stuff](http://www.jmlr.org/papers/volume10/zakai09a/zakai09a.pdf). The opinions stated here are my own, not those of my company.
+The opinions stated here are my own, not anyone else's.
 
 <ul>
   {% if site.github_username %}
