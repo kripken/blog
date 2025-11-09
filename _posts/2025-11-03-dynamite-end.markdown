@@ -28,3 +28,8 @@ This avoids an anticlimax while still making the movie's main points. And I thin
 * Seeing the split screen, **viewers realize the movie's point** - it will not resolve things. Both outcomes are possible. We still don't know what the "right" decision would've been for the president, and the process getting there is terrible and dangerous.
 
 Also, this fits in with the rest of the movie structurally: It also uses time jumps, and it also has three parts.
+
+## Comments
+
+Feel free to tell me where I am wrong [on Bluesky](https://bsky.app/profile/kripken.com/post/3m5a566ctnc2y).
+
