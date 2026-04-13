@@ -46,6 +46,7 @@ The opinions stated here are my own, not anyone else's.
 
 * Zakai, A. (2018). “Fast Physics on the Web Using C++, JavaScript, and Emscripten”. Computing in Science & Engineering (CiSE), vol. 20, no. 1, pp 11-19.
 * Haas, A., Rossberg, A., Schuff, D.L., Titzer, B.L., Holman, M., Gohman, D., Wagner, L., Zakai, A., and Bastien, JF. (2017). “Bringing the web up to speed with WebAssembly”. In Proceedings of the 38th ACM SIGPLAN Conference on Programming Language Design and Implementation (PLDI 2017), pp. 185-200.
+* Puder, A., Woeltjen, V., Zakai, A. (2013) “Cross-compiling Java to JavaScript via tool-chaining.” Proceedings of the 2013 International Conference on Principles and Practices of Programming on the Java Platform: Virtual Machines, Languages, and Tools (PPPJ 2013), pp. 25 - 34.
 * Zakai, A. (2011). “Emscripten: an LLVM-to-JavaScript compiler”. In Proceedings of the ACM international conference companion on Object oriented programming systems languages and applications companion (OOPSLA '11), pp. 301-312.
 * Zakai, A., Ritov, Y. (2009). “Consistency and Localizability.” Journal of Machine Learning Research, 10, pp. 827­-856.
 Goldberg, Y., Zakai, A., Kushnir, D, Ritov, Y. (2008). “Manifold Learning: The Price of Normalization.” Journal of Machine Learning Research, 9, pp. 1909­-1939.
