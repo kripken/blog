@@ -49,8 +49,8 @@ The opinions stated here are my own, not anyone else's.
 * Puder, A., Woeltjen, V., Zakai, A. (2013) “Cross-compiling Java to JavaScript via tool-chaining.” Proceedings of the 2013 International Conference on Principles and Practices of Programming on the Java Platform: Virtual Machines, Languages, and Tools (PPPJ 2013), pp. 25 - 34.
 * Zakai, A. (2011). “Emscripten: an LLVM-to-JavaScript compiler”. In Proceedings of the ACM international conference companion on Object oriented programming systems languages and applications companion (OOPSLA '11), pp. 301-312.
 * Zakai, A., Ritov, Y. (2009). “Consistency and Localizability.” Journal of Machine Learning Research, 10, pp. 827­-856.
-Goldberg, Y., Zakai, A., Kushnir, D, Ritov, Y. (2008). “Manifold Learning: The Price of Normalization.” Journal of Machine Learning Research, 9, pp. 1909­-1939.
+* Goldberg, Y., Zakai, A., Kushnir, D, Ritov, Y. (2008). “Manifold Learning: The Price of Normalization.” Journal of Machine Learning Research, 9, pp. 1909­-1939.
 * Zakai, A., Ritov, Y. (2008). “How Local Should a Learning Method Be?” Proceedings of the 21st Annual Conference on Learning Theory (COLT 2008), pp. 205-­216.
-Bickel, P. J., Ritov, Y., Zakai, A. (2006). “Some Theory for Generalized Boosting.” Journal of Machine Learning Research, 7, pp. 705­-732.
+* Bickel, P. J., Ritov, Y., Zakai, A. (2006). “Some Theory for Generalized Boosting.” Journal of Machine Learning Research, 7, pp. 705­-732.
 * Gati, I., Kleiman, T., Saka, N., Zakai, A. (2003). “Perceived benefits of using an internet­ based interactive career planning system.” Journal of Vocational Behavior, 62, pp. 272­-286.
 
