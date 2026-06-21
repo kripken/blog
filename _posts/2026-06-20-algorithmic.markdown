@@ -285,7 +285,7 @@ Thank you to Gian-Carlo Pascutto, Vincent Carchidi, SE Gyges, and Marcia Cohen-Z
 
 ## Comments
 
-Feel free to respond [on Bluesky (TODO: link)]().
+Feel free to respond [on Bluesky](https://bsky.app/profile/kripken.com/post/3mosqh5zsa22d).
 
 ## Footnotes
 
