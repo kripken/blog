@@ -42,6 +42,11 @@ The opinions stated here are my own, not anyone else's.
 * [Why WebAssembly is Faster Than asm.js](https://hacks.mozilla.org/2017/03/why-webassembly-is-faster-than-asm-js/) (2017)
 * [Compiling to WebAssembly: It’s Happening!](https://hacks.mozilla.org/2015/12/compiling-to-webassembly-its-happening/) (2015)
 
+## Threads
+
+* [About proofs described as "AI is intractable / AGI can't work"](https://bsky.app/profile/kripken.com/post/3msto6gpsrk2j) (2026)
+* [We don't understand neural networks at the algorithmic level](https://bsky.app/profile/kripken.com/post/3mosqh5zsa22d) (2026)
+
 ## Publications
 
 * Zakai, A. (2018). “Fast Physics on the Web Using C++, JavaScript, and Emscripten”. Computing in Science & Engineering (CiSE), vol. 20, no. 1, pp 11-19.
